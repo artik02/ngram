@@ -28,9 +28,9 @@ Cualquier **contribución** enviada al repositorio deberá estar licenciada bajo
 Para instalar `ngram`, primero debes descargar el paquete comprimido para tu plataforma desde la página de [**lanzamientos**](https://github.com/artik02/ngram/releases).
 
 `ngram` está disponible para las siguientes plataformas:
-- **Linux**
-- **Windows**
-- **Android**
+- **Linux**: `ngram-linux-<versión>.tar.gz`
+- **Windows**: `ngram-windows-<versión>.zip`
+- **Android**: `ngram-android-<versión>.apk`
 
 Si deseas instalar `ngram` en una plataforma diferente, necesitarás compilar el código fuente.
 
@@ -43,7 +43,7 @@ Una vez descargado el paquete comprimido, sigue los pasos correspondientes segú
 Si descargaste el archivo comprimido para **Linux**, descomprímelo utilizando el siguiente comando:
 
 ```bash
-tar xvf ngram-linux.tar.gz
+tar xvf ngram-linux-<versión>.tar.gz
 ```
 
 #### Windows
@@ -51,7 +51,7 @@ tar xvf ngram-linux.tar.gz
 Si descargaste el archivo comprimido para **Windows**, descomprímelo con el siguiente comando en PowerShell:
 
 ```powershell
-Expand-Archive -Path ngram-windows.zip -DestinationPath .\
+Expand-Archive -Path ngram-windows-<versión>.zip -DestinationPath .\
 ```
 
 ### Ejecutar la aplicación
@@ -76,7 +76,7 @@ En PowerShell ejecuta el siguiente comando:
 
 #### Android
 
-Instala la aplicación `ngram-android.apk` y haz clic en el ícono de la app desde la pantalla principal de tu dispositivo.
+Instala la aplicación `ngram-android-<versión>.apk` y haz clic en el ícono de la app desde la pantalla principal de tu dispositivo.
 
 ## Compilación
 
