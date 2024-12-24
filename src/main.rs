@@ -20,7 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use dioxus::prelude::*;
+use dioxus::{
+    logger::tracing::{info, Level},
+    prelude::*,
+};
 use dioxus_i18n::{prelude::*, t};
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -45,6 +48,7 @@ mod localization {
 use localization::*;
 
 fn main() {
+    dioxus::logger::init(Level::INFO).expect("Dioxus logger failed to init");
     dioxus::launch(App);
 }
 
@@ -75,10 +79,13 @@ fn App() -> Element {
 fn Header() -> Element {
     let mut i18n = i18n();
 
-    let change_language = move |event: FormEvent| match event.value().as_str() {
-        "en-US" => i18n.set_language(EN_US),
-        "es-MX" => i18n.set_language(ES_MX),
-        _ => {}
+    let change_language = move |event: FormEvent| {
+        info!("Change language event: {:?}", event);
+        match event.value().as_str() {
+            "en-US" => i18n.set_language(EN_US),
+            "es-MX" => i18n.set_language(ES_MX),
+            _ => {}
+        }
     };
 
     rsx! {
