@@ -23,6 +23,6 @@
 # es-MX.ftl
 hello_world = Hola mundo
 
-# non-translatable
+# no traducible
 lang_en_US = English of United States
 lang_es_MX = Español de México
