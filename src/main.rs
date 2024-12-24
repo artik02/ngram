@@ -46,7 +46,7 @@ fn App() -> Element {
             class: "container mx-auto flex items-center justify-center h-screen",
             h1 {
                 class: "text-4xl text-center font-bold",
-                "Hola mundo"
+                "Hello world"
             }
         }
     }
