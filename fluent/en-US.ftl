@@ -20,34 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-[package]
-name = "ngram"
-version = "0.1.0"
-authors = ["artik02"]
-edition = "2021"
+# en-US.ftl
+hello_world = Hello world
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-dioxus = { version = "0.6.0", features = [] }
-dioxus-i18n = "0.3.0"
-getrandom = { version = "0.2.15", features = ["js"] }
-rand = "0.8.5"
-
-[features]
-default = ["web"]
-web = ["dioxus/web"]
-desktop = ["dioxus/desktop"]
-mobile = ["dioxus/mobile"]
-
-[profile]
-
-[profile.wasm-dev]
-inherits = "dev"
-opt-level = 1
-
-[profile.server-dev]
-inherits = "dev"
-
-[profile.android-dev]
-inherits = "dev"
+# non-translatable
+lang_en_US = English of United States
+lang_es_MX = Español de México
