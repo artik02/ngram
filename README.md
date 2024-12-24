@@ -100,6 +100,14 @@ To start building, first clone the `ngram` repository using the following comman
 git clone https://github.com/artik02/ngram.git
 ```
 
+### Execute the Tailwind CSS compiler
+
+Run the **TailwindCSS** compiler in the main repository folder to generate it's build artifacts:
+
+```bash
+npx tailwindcss -i ./input.css -o ./assets/tailwind.css
+```
+
 ### Supported platforms
 
 `ngram` is built using the Dioxus framework, so make sure the target platform is compatible. To see the supported platforms, run the following command:

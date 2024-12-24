@@ -100,6 +100,14 @@ Para comenzar con la compilación, primero clona el repositorio de `ngram` con e
 git clone https://github.com/artik02/ngram.git
 ```
 
+### Ejecuta el compilador Tailwind CSS
+
+Usa el compilador **TailwindCSS** en el directorio principal del repositorio para generar sus artefactos:
+
+```bash
+npx tailwindcss -i ./input.css -o ./assets/tailwind.css
+```
+
 ### Plataformas soportadas
 
 `ngram` se compila utilizando el framework Dioxus, por lo que deberás asegurarte de que la plataforma de destino sea compatible. Para ver las plataformas soportadas, ejecuta el siguiente comando:
