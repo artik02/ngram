@@ -20,8 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use super::definitions::NonogramSolution;
-use super::editor::NonogramEditor;
+use super::definitions::{NonogramEditor, NonogramSolution};
 use crate::npalette;
 use dioxus::{logger::tracing::info, prelude::*};
 use dioxus_i18n::t;

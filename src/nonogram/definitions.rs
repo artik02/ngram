@@ -48,3 +48,9 @@ pub struct NonogramPuzzle {
 pub struct NonogramSolution {
     pub solution_grid: Vec<Vec<usize>>,
 }
+
+#[derive(Clone)]
+pub struct NonogramEditor {
+    pub palette: NonogramPalette,
+    pub nonogram: NonogramSolution,
+}
