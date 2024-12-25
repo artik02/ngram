@@ -22,6 +22,8 @@
 
 # es-MX.ftl
 hello_world = Hola mundo
+title_home = Inicio
+title_nonogram_editor = Editor de Nonograma
 
 # no traducible
 lang_en_US = English of United States
