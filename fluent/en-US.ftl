@@ -22,6 +22,8 @@
 
 # en-US.ftl
 hello_world = Hello world
+title_home = Home
+title_nonogram_editor = Nonogram Editor
 
 # non-translatable
 lang_en_US = English of United States

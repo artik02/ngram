@@ -40,12 +40,20 @@ mod localization {
     use dioxus_i18n::unic_langid::{langid, LanguageIdentifier};
 
     pub const DEF_LANG: LanguageIdentifier = EN_US;
-
     pub const EN_US: LanguageIdentifier = langid!("en-US");
     pub const ES_MX: LanguageIdentifier = langid!("es-MX");
 }
 
 use localization::*;
+
+#[derive(Routable, Clone)]
+enum Route {
+    #[layout(Header)]
+    #[route("/")]
+    Home {},
+    #[route("/editor")]
+    Editor {},
+}
 
 fn main() {
     dioxus::logger::init(Level::INFO).expect("Dioxus logger failed to init");
@@ -55,7 +63,9 @@ fn main() {
 #[component]
 fn App() -> Element {
     use_init_i18n(|| {
+        info!("Initializing i18n");
         I18nConfig::new(DEF_LANG)
+            .with_fallback(ES_MX)
             .with_locale(Locale::new_static(
                 EN_US,
                 include_str!("../fluent/en-US.ftl"),
@@ -69,9 +79,7 @@ fn App() -> Element {
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
-
-        Header {}
-        Body {}
+        Router::<Route> {}
     }
 }
 
@@ -89,33 +97,50 @@ fn Header() -> Element {
     };
 
     rsx! {
-        div {
-            class: "container mx-auto flex items-center justify-between py-4 px-6 bg-gray-800",
-            div {
-                class: "text-white text-2xl font-bold",
-                p { "NGRAM" }
+        div { class: "container mx-auto flex items-center justify-between py-4 px-6 bg-gray-800",
+            div { class: "text-white text-2xl font-bold",
+                Link { to: Route::Home {}, "NGRAM" }
+            }
+            div { class: "flex-1 mx-4 overflow-x-auto whitespace-nowrap flex items-center gap-2",
+                Link {
+                    to: Route::Home {},
+                    class: "inline-block text-white text-xl",
+                    {t!("title_home")}
+                }
+                span { class: "text-white", "|" }
+                Link {
+                    to: Route::Editor {},
+                    class: "inline-block text-white text-xl",
+                    {t!("title_nonogram_editor")}
+                }
             }
             div {
                 select {
                     class: "appearance-none bg-gray-700 text-white border border-gray-600 rounded-md p-2 hover:bg-gray-600 transition ease-in-out duration-200",
                     onchange: change_language,
-                    option { value: "en-US", { t!("lang_en_US") } }
-                    option { value: "es-MX", { t!("lang_es_MX") } }
+                    option { value: "en-US", {t!("lang_en_US")} }
+                    option { value: "es-MX", {t!("lang_es_MX")} }
                 }
             }
+        }
+        Outlet::<Route> {}
+    }
+}
+
+#[component]
+fn Home() -> Element {
+    rsx! {
+        div { class: "container mx-auto flex items-center justify-center min-h-screen",
+            h1 { class: "text-4xl text-center font-bold", {t!("hello_world")} }
         }
     }
 }
 
 #[component]
-fn Body() -> Element {
+fn Editor() -> Element {
     rsx! {
-        div {
-            class: "container mx-auto flex items-center justify-center min-h-screen",
-            h1 {
-                class: "text-4xl text-center font-bold",
-                { t!("hello_world") }
-            }
+        div { class: "container mx-auto flex items-center justify-center min-h-screen",
+            h1 { class: "text-4xl text-center font-bold", {t!("title_nonogram_editor")} }
         }
     }
 }
