@@ -20,24 +20,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#[derive(Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Deserialize, Serialize)]
 pub struct NonogramPalette {
     pub color_palette: Vec<String>,
     pub brush_color: usize,
 }
 
 pub const BACKGROUND: usize = 0;
-pub const PRIMARY: usize = 1;
-pub const SECUNDARY: usize = 2;
-pub const TERCIARY: usize = 3;
-pub const QUATERNARY: usize = 4;
-pub const QUINTINARY: usize = 5;
 
+#[derive(Clone, Deserialize, Serialize)]
 pub struct NonogramSegment {
     pub segment_color: usize,
     pub segment_length: usize,
 }
 
+#[derive(Clone, Deserialize, Serialize)]
 pub struct NonogramPuzzle {
     pub rows: usize,
     pub cols: usize,
