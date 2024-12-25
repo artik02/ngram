@@ -25,6 +25,7 @@ macro_rules! npalette {
     ($($color:expr),+) => {
         crate::nonogram::definitions::NonogramPalette {
             color_palette: vec![$(String::from($color)),+],
+            brush_color: 0,
         }
     };
 }

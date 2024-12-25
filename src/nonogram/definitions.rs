@@ -20,8 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#[derive(Clone)]
 pub struct NonogramPalette {
     pub color_palette: Vec<String>,
+    pub brush_color: usize,
 }
 
 pub const BACKGROUND: usize = 0;
@@ -43,6 +45,7 @@ pub struct NonogramPuzzle {
     pub col_constraints: Vec<Vec<NonogramSegment>>,
 }
 
+#[derive(Clone)]
 pub struct NonogramSolution {
     pub solution_grid: Vec<Vec<usize>>,
 }

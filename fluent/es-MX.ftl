@@ -24,6 +24,8 @@
 hello_world = Hola mundo
 title_home = Inicio
 title_nonogram_editor = Editor de Nonograma
+button_save_nonogram = Guardar Nonograma
+button_load_nonogram = Cargar Nonograma
 
 # no traducible
 lang_en_US = English of United States

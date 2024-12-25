@@ -24,6 +24,8 @@
 hello_world = Hello world
 title_home = Home
 title_nonogram_editor = Nonogram Editor
+button_save_nonogram = Save Nonogram
+button_load_nonogram = Load Nonogram
 
 # non-translatable
 lang_en_US = English of United States
