@@ -91,13 +91,26 @@ fn Header() -> Element {
     let mut i18n = i18n();
 
     let change_language = move |event: FormEvent| {
-        info!("Change language event: {:?}", event);
+        info!("Change language to: {}", event.value());
         match event.value().as_str() {
             "en-US" => i18n.set_language(EN_US),
             "es-MX" => i18n.set_language(ES_MX),
             _ => {}
         }
     };
+
+    fn get_language(mut i18n: I18n) -> String {
+        let lang = i18n.language();
+        format!(
+            "{}-{}",
+            lang.language.as_str(),
+            if let Some(l) = lang.region {
+                String::from(l.as_str())
+            } else {
+                String::from("")
+            }
+        )
+    }
 
     rsx! {
         div { class: "container mx-auto flex items-center justify-between py-4 px-6 bg-gray-800",
@@ -120,6 +133,7 @@ fn Header() -> Element {
             div {
                 select {
                     class: "appearance-none bg-gray-700 text-white border border-gray-600 rounded-md p-2 hover:bg-gray-600 transition ease-in-out duration-200",
+                    value: "{get_language(i18n)}",
                     onchange: change_language,
                     option { value: "en-US", {t!("lang_en_US")} }
                     option { value: "es-MX", {t!("lang_es_MX")} }
