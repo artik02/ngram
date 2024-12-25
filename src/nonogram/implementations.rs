@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use super::definitions::{NonogramPalette, NonogramPuzzle, NonogramSegment, NonogramSolution};
+use super::definitions::{NonogramPuzzle, NonogramSegment, NonogramSolution};
 use crate::nrule;
 
 impl NonogramPuzzle {
@@ -103,11 +103,5 @@ impl NonogramSolution {
             col_constraints.push(col_segments);
         }
         col_constraints
-    }
-}
-
-impl NonogramPalette {
-    pub fn color(&self, idx: usize) -> &str {
-        &self.color_palette[idx]
     }
 }

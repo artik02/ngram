@@ -2,7 +2,7 @@
 
 ## Chores
 
-- [ ] Move editor to nonogram module
+- [x] Move editor to nonogram module
 
 ## Features
 
