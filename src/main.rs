@@ -30,11 +30,14 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 
 mod nonogram {
+    pub mod component;
     pub mod definitions;
     pub mod genetic;
     pub mod implementations;
     pub mod macros;
 }
+
+use nonogram::component::Editor;
 
 mod localization {
     use dioxus_i18n::unic_langid::{langid, LanguageIdentifier};
@@ -83,12 +86,13 @@ fn App() -> Element {
     }
 }
 
+// TODO! FIX header on mobile or small screens
 #[component]
 fn Header() -> Element {
     let mut i18n = i18n();
 
     let change_language = move |event: FormEvent| {
-        info!("Change language event: {:?}", event);
+        info!("Change language to: {}", event.value());
         match event.value().as_str() {
             "en-US" => i18n.set_language(EN_US),
             "es-MX" => i18n.set_language(ES_MX),
@@ -96,8 +100,21 @@ fn Header() -> Element {
         }
     };
 
+    fn get_language(mut i18n: I18n) -> String {
+        let lang = i18n.language();
+        format!(
+            "{}-{}",
+            lang.language.as_str(),
+            if let Some(l) = lang.region {
+                String::from(l.as_str())
+            } else {
+                String::from("")
+            }
+        )
+    }
+
     rsx! {
-        div { class: "container mx-auto flex items-center justify-between py-4 px-6 bg-gray-800",
+        div { class: "mx-auto flex items-center justify-between py-4 px-6 bg-gray-800",
             div { class: "text-white text-2xl font-bold",
                 Link { to: Route::Home {}, "NGRAM" }
             }
@@ -114,13 +131,12 @@ fn Header() -> Element {
                     {t!("title_nonogram_editor")}
                 }
             }
-            div {
-                select {
-                    class: "appearance-none bg-gray-700 text-white border border-gray-600 rounded-md p-2 hover:bg-gray-600 transition ease-in-out duration-200",
-                    onchange: change_language,
-                    option { value: "en-US", {t!("lang_en_US")} }
-                    option { value: "es-MX", {t!("lang_es_MX")} }
-                }
+            select {
+                class: "appearance-none bg-gray-700 text-white border border-gray-600 rounded-md p-2 hover:bg-gray-600 transition ease-in-out duration-200",
+                value: "{get_language(i18n)}",
+                onchange: change_language,
+                option { value: "en-US", {t!("lang_en_US")} }
+                option { value: "es-MX", {t!("lang_es_MX")} }
             }
         }
         Outlet::<Route> {}
@@ -132,15 +148,6 @@ fn Home() -> Element {
     rsx! {
         div { class: "container mx-auto flex items-center justify-center min-h-screen",
             h1 { class: "text-4xl text-center font-bold", {t!("hello_world")} }
-        }
-    }
-}
-
-#[component]
-fn Editor() -> Element {
-    rsx! {
-        div { class: "container mx-auto flex items-center justify-center min-h-screen",
-            h1 { class: "text-4xl text-center font-bold", {t!("title_nonogram_editor")} }
         }
     }
 }

@@ -20,10 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use super::definitions::{NonogramPalette, NonogramPuzzle, NonogramSegment, NonogramSolution};
+use super::definitions::{
+    NonogramPalette, NonogramPuzzle, NonogramSegment, NonogramSolution, BACKGROUND,
+};
 use crate::nrule;
 
 impl NonogramPuzzle {
+    // TODO! Delete non-used colors
     pub fn from_solution(solution: &NonogramSolution) -> Self {
         let rows = solution.rows();
         let cols = solution.cols();
@@ -47,7 +50,7 @@ impl NonogramSolution {
     pub fn cols(&self) -> usize {
         self.solution_grid
             .get(0)
-            .expect("La solución del nonograma tiene cero filas")
+            .expect("The nonogram solution has zero rows")
             .len()
     }
 
@@ -104,10 +107,132 @@ impl NonogramSolution {
         }
         col_constraints
     }
+
+    pub fn draw_line(&mut self, start: (usize, usize), end: (usize, usize), color: usize) {
+        let dy = (start.0 as isize - end.0 as isize).abs();
+        let dx = (start.1 as isize - end.1 as isize).abs();
+
+        if dx >= dy {
+            let x_start = start.1.min(end.1);
+            let x_end = start.1.max(end.1);
+
+            for x in x_start..=x_end {
+                self.solution_grid[start.0][x] = color;
+            }
+        } else {
+            let y_start = start.0.min(end.0);
+            let y_end = start.0.max(end.0);
+
+            for y in y_start..=y_end {
+                self.solution_grid[y][start.1] = color;
+            }
+        }
+    }
+
+    pub fn in_line(
+        &self,
+        start: Option<(usize, usize)>,
+        end: Option<(usize, usize)>,
+        coord: (usize, usize),
+    ) -> bool {
+        if start.is_none() || end.is_none() {
+            return false;
+        }
+        let start = start.unwrap();
+        let end = end.unwrap();
+
+        let dy = (start.0 as isize - end.0 as isize).abs();
+        let dx = (start.1 as isize - end.1 as isize).abs();
+
+        if dx >= dy {
+            let x_start = start.1.min(end.1);
+            let x_end = start.1.max(end.1);
+
+            coord.0 == start.0 && (x_start..=x_end).contains(&coord.1)
+        } else {
+            let y_start = start.0.min(end.0);
+            let y_end = start.0.max(end.0);
+
+            coord.1 == start.1 && (y_start..=y_end).contains(&coord.0)
+        }
+    }
+
+    pub fn set_cols(&mut self, cols: usize) {
+        let current_cols = self.cols();
+        let target_cols = cols.max(2);
+
+        if target_cols > current_cols {
+            for row_data in self.solution_grid.iter_mut() {
+                row_data.append(&mut vec![BACKGROUND; target_cols - current_cols]);
+            }
+        } else if target_cols < current_cols {
+            for row_data in self.solution_grid.iter_mut() {
+                row_data.truncate(target_cols);
+            }
+        }
+    }
+
+    pub fn set_rows(&mut self, rows: usize) {
+        let current_rows = self.rows();
+        let target_rows = rows.max(2);
+
+        if target_rows > current_rows {
+            self.solution_grid.append(&mut vec![
+                vec![BACKGROUND; self.cols()];
+                target_rows - current_rows
+            ]);
+        } else if target_rows < current_rows {
+            self.solution_grid.truncate(target_rows);
+        }
+    }
 }
 
 impl NonogramPalette {
-    pub fn color(&self, idx: usize) -> &str {
-        &self.color_palette[idx]
+    pub fn get(&self, index: usize) -> &str {
+        &self.color_palette[index]
+    }
+
+    pub fn brush(&self) -> usize {
+        self.brush_color
+    }
+
+    pub fn len(&self) -> usize {
+        self.color_palette.len()
+    }
+
+    pub fn set_color(&mut self, color: String) {
+        self.color_palette[self.brush_color] = color;
+    }
+
+    pub fn set(&mut self, brush_color: usize) {
+        self.brush_color = brush_color;
+    }
+
+    pub fn take(&self, index: usize) -> Self {
+        Self {
+            color_palette: self.color_palette[0..index].to_vec(),
+            brush_color: 0,
+        }
+    }
+
+    pub fn get_color(&self) -> &str {
+        &self.color_palette[self.brush_color]
+    }
+
+    pub fn push_color(&mut self, color: String) {
+        self.color_palette.push(color);
+    }
+
+    pub fn remove_color(&mut self, index: usize) {
+        self.color_palette.remove(index);
+        self.brush_color = 0.max(self.brush_color as isize - 1) as usize;
+    }
+
+    pub fn show_brush(&self) -> String {
+        format!(
+            "{} -> {}",
+            self.brush_color + 1,
+            self.color_palette[self.brush_color]
+        )
     }
 }
