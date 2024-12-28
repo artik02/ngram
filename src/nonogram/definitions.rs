@@ -22,6 +22,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::define_palette;
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct NonogramPalette {
     pub color_palette: Vec<String>,
@@ -29,6 +31,17 @@ pub struct NonogramPalette {
 }
 
 pub const BACKGROUND: usize = 0;
+define_palette!(
+    DEFAULT_PALETTE,
+    "#87ceeb", // Sky Blue
+    "#228b22", // Green (Somewhat Dark, like foliage)
+    "#8b4513", // Brown (Somewhat Dark, like a tree)
+    "#000000", // Black
+    "#ffffff", // White
+    "#ffa500", // Orange (Somewhat Bright)
+    "#7cfc00", // Light Green (Like Grass)
+    "#deb887"  // Light Brown (Soft, like beige)
+);
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct NonogramSegment {
@@ -53,4 +66,13 @@ pub struct NonogramSolution {
 pub struct NonogramEditor {
     pub palette: NonogramPalette,
     pub nonogram: NonogramSolution,
+    pub size: usize,
+    pub start: Option<(usize, usize)>,
+    pub end: Option<(usize, usize)>,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct NonogramFile {
+    pub puzzle: NonogramPuzzle,
+    pub palette: NonogramPalette,
 }

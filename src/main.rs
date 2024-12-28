@@ -86,6 +86,7 @@ fn App() -> Element {
     }
 }
 
+// TODO! FIX header on mobile or small screens
 #[component]
 fn Header() -> Element {
     let mut i18n = i18n();
@@ -113,7 +114,7 @@ fn Header() -> Element {
     }
 
     rsx! {
-        div { class: "container mx-auto flex items-center justify-between py-4 px-6 bg-gray-800",
+        div { class: "mx-auto flex items-center justify-between py-4 px-6 bg-gray-800",
             div { class: "text-white text-2xl font-bold",
                 Link { to: Route::Home {}, "NGRAM" }
             }
@@ -130,14 +131,12 @@ fn Header() -> Element {
                     {t!("title_nonogram_editor")}
                 }
             }
-            div {
-                select {
-                    class: "appearance-none bg-gray-700 text-white border border-gray-600 rounded-md p-2 hover:bg-gray-600 transition ease-in-out duration-200",
-                    value: "{get_language(i18n)}",
-                    onchange: change_language,
-                    option { value: "en-US", {t!("lang_en_US")} }
-                    option { value: "es-MX", {t!("lang_es_MX")} }
-                }
+            select {
+                class: "appearance-none bg-gray-700 text-white border border-gray-600 rounded-md p-2 hover:bg-gray-600 transition ease-in-out duration-200",
+                value: "{get_language(i18n)}",
+                onchange: change_language,
+                option { value: "en-US", {t!("lang_en_US")} }
+                option { value: "es-MX", {t!("lang_es_MX")} }
             }
         }
         Outlet::<Route> {}
