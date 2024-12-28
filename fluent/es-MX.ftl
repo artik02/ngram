@@ -21,8 +21,7 @@
 # SOFTWARE.
 
 # es-MX.ftl
-hello_world = Hola mundo
-title_home = Inicio
+title_nonogram_solver =  Resolver Nonograma
 title_nonogram_editor = Editor de Nonograma
 label_columns = Columnas
 label_rows = Filas

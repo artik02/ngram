@@ -23,6 +23,9 @@
 use std::fs::File;
 use std::io::Write;
 
+use crate::nonogram::definitions::NonogramPalette;
+use crate::nonogram::puzzles::*;
+
 use super::definitions::{NonogramEditor, NonogramSolution};
 use super::definitions::{NonogramFile, NonogramPuzzle, DEFAULT_PALETTE};
 use dioxus::{
@@ -34,6 +37,44 @@ use dioxus_free_icons::icons::fa_solid_icons::FaPlus;
 use dioxus_free_icons::Icon;
 use dioxus_i18n::t;
 use rand::Rng;
+
+#[component]
+pub fn Solver() -> Element {
+    std::panic::set_hook(Box::new(|info| {
+        error!("Panic: {}", info);
+    }));
+    use_context_provider(|| {
+        info!("Initializing nonogram puzzle");
+        Signal::new(tree_nonogram_puzzle())
+    });
+    use_context_provider(|| {
+        info!("Initializing nonogram palette");
+        Signal::new(tree_nonogram_palette())
+    });
+    use_context_provider(|| {
+        info!("Initializing empty nonogram solution");
+        Signal::new(tree_empty_nonogram_solution())
+    });
+
+    rsx! {
+        main { class: "flex flex-col gap-10 items-center min-h-screen mb-20",
+            h1 { class: "text-4xl font-bold my-10 text-center", {t!("title_nonogram_solver")} }
+            SolverToolbar {}
+            SolverNonogram {}
+        }
+    }
+}
+
+#[component]
+fn SolverToolbar() -> Element {
+    let mut palette = use_context::<Signal<NonogramPalette>>();
+    rsx! {}
+}
+
+#[component]
+fn SolverNonogram() -> Element {
+    rsx! {}
+}
 
 #[component]
 pub fn Editor() -> Element {
@@ -51,7 +92,7 @@ pub fn Editor() -> Element {
     });
 
     std::panic::set_hook(Box::new(|info| {
-        println!("Panic: {}", info);
+        error!("Panic: {}", info);
     }));
 
     rsx! {

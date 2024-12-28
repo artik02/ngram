@@ -21,8 +21,7 @@
 # SOFTWARE.
 
 # en-US.ftl
-hello_world = Hello world
-title_home = Home
+title_nonogram_solver = Nonogram Solver
 title_nonogram_editor = Nonogram Editor
 label_columns = Columns
 label_rows = Rows

@@ -41,12 +41,3 @@ macro_rules! nrule {
         }
     };
 }
-
-#[macro_export]
-macro_rules! nsol {
-    ($grid:expr) => {
-        crate::nonogram::definitions::NonogramSolution {
-            solution_grid: $grid,
-        }
-    };
-}
