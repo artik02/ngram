@@ -4,7 +4,7 @@
 
 - [X] Fix nonogram editor styles on all platforms
 - [ ] Fix nonogram constraints text color on web
-- [ ] Fix white or bright rgb colors borders to black
+- [X] Fix white or bright rgb colors borders to black
 - [ ] Fix wonkiness on the editor when updating rows or columns contraints
 - [ ] Make nav bar visible on mobile
 - [ ] Make drawing multiple blocks work on mobile
@@ -29,6 +29,8 @@
     + [X] Develop a usable design
         * [X] Reintegrate color palette
         * [X] Reintegrate nonogram visualization
+        * [ ] Show read-only cols and rows on solver
+        * [ ] Add an absolut coordinate label
     + [X] Integrate nonogram loading
     + [X] Integrate reactive constraints on solver
     + [ ] Nonogram evaluation function
