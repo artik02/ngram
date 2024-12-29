@@ -242,6 +242,29 @@ impl NonogramSolution {
             self.solution_grid.truncate(target_rows);
         }
     }
+
+    pub fn clear(&mut self) {
+        for row_data in self.solution_grid.iter_mut() {
+            row_data.fill(0);
+        }
+    }
+
+    pub fn slide(&mut self, dx: isize, dy: isize) {
+        let rows = self.rows();
+        let cols = self.cols();
+        let mut new_grid = vec![vec![0; cols]; rows];
+        for y in 0..rows {
+            for x in 0..cols {
+                let new_x = x as isize + dx;
+                let new_y = y as isize + dy;
+
+                if (0..cols as isize).contains(&new_x) && (0..rows as isize).contains(&new_y) {
+                    new_grid[new_y as usize][new_x as usize] = self.solution_grid[y][x];
+                }
+            }
+        }
+        self.solution_grid = new_grid;
+    }
 }
 
 impl NonogramPalette {
