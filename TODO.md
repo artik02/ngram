@@ -40,10 +40,9 @@
 
 ## Chores
 
-- [ ] Rework brush color to remove from palette
-- [ ] Rework nonoram editor state with global context
+- [X] Rework nonoram editor state with global context
 - [ ] Move nonogram components in it's own modules
-    + [ ] Rework toolbar component
+    + [X] Rework toolbar component
 - [x] Move editor to nonogram module
 - [ ] Document the code
 - [ ] Document in detail
