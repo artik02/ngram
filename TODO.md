@@ -45,6 +45,9 @@
 
 ## Chores
 
+- [ ] Update releases to use bundles
+    + [ ] Update readme installation section
+- [ ] Add an icon for the application
 - [ ] Make nonogram components even more composable (remove repetition)
 - [ ] Change nonogram puzzle example
 - [ ] Update initial block_size for mobile
