@@ -45,6 +45,7 @@
 
 ## Chores
 
+- [ ] Make nonogram components even more composable (remove repetition)
 - [ ] Change nonogram puzzle example
 - [ ] Update initial block_size for mobile
 - [X] Rework nonoram editor state with global context
