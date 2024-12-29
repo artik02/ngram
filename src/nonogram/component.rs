@@ -357,8 +357,12 @@ fn ColorPalette(readonly: bool) -> Element {
                 key: "brush-{i}",
                 style: "background-color: {color}",
                 class: "w-10 h-10 rounded-full border border-gray-400 hover:bg-gray-600 transition-transform transform hover:scale-125",
-                onclick: move |_| {
-                    use_palette.write().brush = i;
+                onclick: move |event| {
+                    if readonly || !(event.modifiers().ctrl() || event.modifiers().shift()) {
+                        use_palette.write().brush = i;
+                    } else {
+                        use_palette.write().remove_color(i);
+                    }
                     info!("Changed brush color: {}", use_palette().show_brush());
                 },
             }

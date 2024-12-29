@@ -267,7 +267,9 @@ impl NonogramPalette {
 
     pub fn remove_color(&mut self, index: usize) {
         self.color_palette.remove(index);
-        self.brush = 0.max(self.brush as isize - 1isize) as usize;
+        if self.brush > 0 {
+            self.brush -= 1;
+        }
     }
 
     pub fn show_brush(&self) -> String {
