@@ -75,11 +75,225 @@ pub fn Solver() -> Element {
 
 #[component]
 fn SolverToolbar() -> Element {
+    rsx! {
+        section { class: "container flex flex-col space-y-6 p-6 rounded-lg shadow-lg bg-gray-900",
+            div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
+                RowsInput { readonly: true }
+                ColumnsInput { readonly: true }
+                BlockSizeInput {}
+            }
+            div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
+                FileLoadInput {}
+            }
+            div { class: "flex flex-wrap justify-items-center justify-center items-center gap-6",
+                ColorPalette { readonly: true }
+            }
+        }
+    }
+}
+
+#[component]
+fn SolverNonogram() -> Element {
+    rsx! {
+        section { class: "mb-20",
+            table { class: "border-separate border-spacing-4",
+                thead {
+                    tr {
+                        th { class: "align-bottom", ColorInput {} }
+                        th { class: "align-bottom", SolverColConstraints {} }
+                    }
+                }
+                tbody {
+                    tr {
+                        th { class: "flex justify-end", SolverRowConstraints {} }
+                        td { Solution {} }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+pub fn Editor() -> Element {
+    std::panic::set_hook(Box::new(|info| {
+        error!("Panic: {}", info);
+    }));
+    use_context_provider(|| {
+        info!("Initializing nonogram palette");
+        Signal::new(tree_nonogram_palette())
+    });
+    use_context_provider(|| {
+        info!("Initializing empty nonogram solution");
+        Signal::new(tree_empty_nonogram_solution())
+    });
+    use_context_provider(|| {
+        info!("Initializing nonogram editor state");
+        Signal::new(NonogramData {
+            filename: String::new(),
+            block_size: 40,
+            start: None,
+            end: None,
+        })
+    });
+
+    rsx! {
+        main { class: "flex flex-col gap-10 items-center min-h-screen mb-20",
+            h1 { class: "text-4xl font-bold my-10 text-center", {t!("title_nonogram_editor")} }
+            EditorToolbar {}
+            EditorNonogram {}
+        }
+    }
+}
+
+#[component]
+fn EditorToolbar() -> Element {
+    rsx! {
+        section { class: "container flex flex-col space-y-6 p-6 rounded-lg shadow-lg bg-gray-900",
+            div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
+                RowsInput { readonly: false }
+                ColumnsInput { readonly: false }
+                BlockSizeInput {}
+            }
+            div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
+                FileSaveInput {}
+            }
+            div { class: "flex flex-wrap justify-items-center justify-center items-center gap-6",
+                ColorPalette { readonly: false }
+            }
+        }
+    }
+}
+
+#[component]
+fn EditorNonogram() -> Element {
+    rsx! {
+        section { class: "mb-20",
+            table { class: "border-separate border-spacing-4",
+                thead {
+                    tr {
+                        th { class: "align-bottom", ColorInput {} }
+                        th { class: "align-bottom", ColConstraints {} }
+                    }
+                }
+                tbody {
+                    tr {
+                        th { class: "flex justify-end", RowConstraints {} }
+                        td { Solution {} }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn RowsInput(readonly: bool) -> Element {
+    let mut use_solution = use_context::<Signal<NonogramSolution>>();
+    rsx! {
+        div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
+            label {
+                r#for: "rows-input",
+                class: "py-2 text-gray-200 font-semibold",
+                cursor: if !readonly { "pointer" },
+                color: if readonly { "darkgray" },
+                {t!("label_rows")}
+                ":"
+            }
+            input {
+                id: "rows-input",
+                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
+                cursor: if !readonly { "pointer" } else { "default" },
+                color: if readonly { "darkgray" },
+                readonly,
+                r#type: "number",
+                min: "2",
+                max: "40",
+                onchange: move |event| {
+                    if let Ok(rows) = event.value().parse::<usize>() {
+                        if (2..=40).contains(&rows) {
+                            use_solution.write().set_rows(rows);
+                        }
+                    }
+                },
+                value: use_solution().rows(),
+            }
+        }
+    }
+}
+
+#[component]
+fn ColumnsInput(readonly: bool) -> Element {
+    let mut use_solution = use_context::<Signal<NonogramSolution>>();
+    rsx! {
+        div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
+            label {
+                r#for: "cols-input",
+                class: "py-2 text-gray-200 font-semibold",
+                cursor: if !readonly { "pointer" },
+                color: if readonly { "darkgray" },
+                {t!("label_columns")}
+                ":"
+            }
+            input {
+                id: "cols-input",
+                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
+                cursor: if !readonly { "pointer" } else { "default" },
+                color: if readonly { "darkgray" },
+                readonly,
+                r#type: "number",
+                min: "2",
+                max: "40",
+                onchange: move |event: FormEvent| {
+                    if let Ok(cols) = event.value().parse::<usize>() {
+                        if (2..=40).contains(&cols) {
+                            use_solution.write().set_cols(cols);
+                        }
+                    }
+                },
+                value: use_solution().cols(),
+            }
+        }
+    }
+}
+
+#[component]
+fn BlockSizeInput() -> Element {
+    let mut use_data = use_context::<Signal<NonogramData>>();
+    rsx! {
+        div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
+            label {
+                r#for: "size-input",
+                class: "py-2 text-gray-200 font-semibold cursor-pointer",
+                {t!("label_size")}
+                ":"
+            }
+            input {
+                id: "size-input",
+                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
+                r#type: "number",
+                min: "10",
+                max: "100",
+                step: "5",
+                value: use_data().block_size,
+                onchange: move |event| {
+                    if let Ok(size) = event.value().parse::<usize>() {
+                        if (10..=100).contains(&size) {
+                            use_data.write().block_size = size;
+                        }
+                    }
+                },
+            }
+        }
+    }
+}
+
+#[component]
+fn FileLoadInput() -> Element {
     let mut use_puzzle = use_context::<Signal<NonogramPuzzle>>();
     let mut use_solution = use_context::<Signal<NonogramSolution>>();
     let mut use_palette = use_context::<Signal<NonogramPalette>>();
     let mut use_data = use_context::<Signal<NonogramData>>();
-
     let load_nonogram_onclick = move |event: FormEvent| async move {
         info!("Loading nonogram...");
         match &event.files() {
@@ -114,62 +328,69 @@ fn SolverToolbar() -> Element {
             }
         }
     };
-
     rsx! {
-        section { class: "container flex flex-col space-y-6 p-6 rounded-lg shadow-lg bg-gray-900",
-            div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
-                div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
-                    label {
-                        r#for: "size-input",
-                        class: "py-2 text-gray-200 font-semibold cursor-pointer",
-                        {t!("label_size")}
-                        ":"
-                    }
-                    input {
-                        id: "size-input",
-                        class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
-                        r#type: "number",
-                        min: "10",
-                        max: "100",
-                        step: "5",
-                        value: use_data().block_size,
-                        onchange: move |event| {
-                            if let Ok(size) = event.value().parse::<usize>() {
-                                if (10..=100).contains(&size) {
-                                    use_data.write().block_size = size;
-                                }
-                            }
-                        },
-                    }
-                }
-                div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
-                    label {
-                        r#for: "file-input",
-                        class: "py-2 text-gray-200 font-semibold cursor-pointer",
-                        {t!("label_load_nonogram")}
-                        ":"
-                    }
-                    input {
-                        id: "file-input",
-                        class: "px-4 py-1",
-                        r#type: "file",
-                        accept: ".ngram",
-                        multiple: false,
-                        onchange: load_nonogram_onclick,
-                    }
-                }
+        div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
+            label {
+                r#for: "file-input",
+                class: "py-2 text-gray-200 font-semibold cursor-pointer",
+                {t!("label_load_nonogram")}
+                ":"
             }
-            div { class: "flex flex-wrap justify-items-center justify-center items-center gap-6",
-                for (i , color) in use_palette().color_palette.iter().enumerate() {
-                    button {
-                        key: "brush-{i}",
-                        style: "background-color: {color}",
-                        class: "w-10 h-10 rounded-full border border-gray-400 hover:bg-gray-600 transition-transform transform hover:scale-125",
-                        onclick: move |_| {
-                            use_palette.write().brush = i;
-                            info!("Changed brush color: {}", use_palette().show_brush());
-                        },
-                    }
+            input {
+                id: "file-input",
+                class: "px-4 py-1",
+                r#type: "file",
+                accept: ".ngram",
+                multiple: false,
+                onchange: load_nonogram_onclick,
+            }
+        }
+    }
+}
+
+#[component]
+fn ColorPalette(readonly: bool) -> Element {
+    let mut use_palette = use_context::<Signal<NonogramPalette>>();
+    rsx! {
+        for (i , color) in use_palette().color_palette.iter().enumerate() {
+            button {
+                key: "brush-{i}",
+                style: "background-color: {color}",
+                class: "w-10 h-10 rounded-full border border-gray-400 hover:bg-gray-600 transition-transform transform hover:scale-125",
+                onclick: move |_| {
+                    use_palette.write().brush = i;
+                    info!("Changed brush color: {}", use_palette().show_brush());
+                },
+            }
+        }
+        if !readonly {
+            button {
+                class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-gray-600 transition-transform transform hover:scale-125",
+                onclick: move |_| {
+                    let palette_len = use_palette().len();
+                    let getter = if palette_len < DEFAULT_PALETTE.len() {
+                        use_palette
+                            .write()
+                            .add_color(String::from(DEFAULT_PALETTE.get(palette_len)));
+                        "default"
+                    } else {
+                        let mut rng = rand::thread_rng();
+                        let random_color = format!(
+                            "#{:02x}{:02x}{:02x}",
+                            rng.gen_range(0..256),
+                            rng.gen_range(0..256),
+                            rng.gen_range(0..256),
+                        );
+                        use_palette.write().add_color(random_color);
+                        "random"
+                    };
+                    use_palette.write().brush = palette_len;
+                    info!("New {} palette color: {}", getter, use_palette().show_brush());
+                },
+                Icon {
+                    class: "w-full h-full",
+                    fill: "rgb(156, 163, 175)",
+                    icon: FaPlus,
                 }
             }
         }
@@ -177,36 +398,85 @@ fn SolverToolbar() -> Element {
 }
 
 #[component]
-fn SolverNonogram() -> Element {
-    let mut use_palette = use_context::<Signal<NonogramPalette>>();
+fn FileSaveInput() -> Element {
+    let use_solution = use_context::<Signal<NonogramSolution>>();
+    let use_palette = use_context::<Signal<NonogramPalette>>();
+    let mut use_data = use_context::<Signal<NonogramData>>();
+    // TODO!: ADD support for web an mobile (file engines)
+    let save_nonogram_onclick = move |_| async move {
+        info!("Saving nonogram...");
+        let puzzle = NonogramPuzzle::from_solution(&use_solution());
+        let mut palette = use_palette().clone();
+        palette.brush = 0;
+        let file = NonogramFile { puzzle, palette };
 
-    rsx! {
-        section { class: "mb-20",
-            table { class: "border-separate border-spacing-4",
-                thead {
-                    tr {
-                        th { class: "align-bottom",
-                            div { class: "flex justify-end",
-                                input {
-                                    r#type: "color",
-                                    class: "appearance-none w-10 h-10 border outline-none transition-transform transform hover:scale-125 focus:ring focus:ring-blue-500 focus:outline-none cursor-pointer",
-                                    value: "{use_palette().get_current()}",
-                                    onchange: move |event| {
-                                        use_palette.write().set_current(event.value());
-                                        info!("Change brush color {}", use_palette().show_brush());
-                                    },
-                                }
-                            }
+        match serde_json::to_string(&file) {
+            Ok(json) => {
+                let filename = if use_data().filename.is_empty() {
+                    String::from("nonogram")
+                } else {
+                    use_data().filename.to_string()
+                };
+                let filename = format!("artifacts/{filename}.ngram");
+                match File::create(&filename) {
+                    Ok(mut file) => match file.write(json.as_bytes()) {
+                        Ok(_) => {
+                            info!("Nonogram '{}' saved successfully!", filename);
                         }
-                        th { class: "align-bottom", SolverColConstraints {} }
+                        Err(err) => {
+                            error!("Failed to write to file '{}': {}", filename, err);
+                        }
+                    },
+                    Err(err) => {
+                        error!("Failed to create the file '{}': {}", filename, err);
                     }
                 }
-                tbody {
-                    tr {
-                        th { class: "flex justify-end", SolverRowConstraints {} }
-                        td { Solution {} }
-                    }
-                }
+            }
+            Err(err) => {
+                error!("Failed to serialize the nonogram: {}", err);
+            }
+        }
+    };
+    rsx! {
+        div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-2",
+            label {
+                r#for: "name-input",
+                class: " py-2 text-gray-200 font-semibold cursor-pointer",
+                {t!("label_save_nonogram")}
+                ":"
+            }
+            input {
+                id: "name-input",
+                class: "appearance-none px-4 py-1 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
+                r#type: "text",
+                placeholder: t!("label_save_nonogram"),
+                onchange: move |event| {
+                    use_data.write().filename = event.value();
+                },
+                value: "{use_data().filename}",
+            }
+        }
+        button {
+            class: "px-4 py-1 font-bold rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800  focus:outline-none focus:ring focus:ring-blue-300",
+            onclick: save_nonogram_onclick,
+            {t!("button_save_nonogram")}
+        }
+    }
+}
+
+#[component]
+fn ColorInput() -> Element {
+    let mut use_palette = use_context::<Signal<NonogramPalette>>();
+    rsx! {
+        div { class: "flex justify-end",
+            input {
+                r#type: "color",
+                class: "appearance-none w-10 h-10 border outline-none transition-transform transform hover:scale-125 focus:ring focus:ring-blue-500 focus:outline-none cursor-pointer",
+                value: "{use_palette().get_current()}",
+                onchange: move |event| {
+                    use_palette.write().set_current(event.value());
+                    info!("Change brush color {}", use_palette().show_brush());
+                },
             }
         }
     }
@@ -302,269 +572,6 @@ fn SolverRowConstraints() -> Element {
                                 }
                             }
                         }
-                    }
-                }
-            }
-        }
-    }
-}
-
-#[component]
-pub fn Editor() -> Element {
-    std::panic::set_hook(Box::new(|info| {
-        error!("Panic: {}", info);
-    }));
-    use_context_provider(|| {
-        info!("Initializing nonogram palette");
-        Signal::new(tree_nonogram_palette())
-    });
-    use_context_provider(|| {
-        info!("Initializing empty nonogram solution");
-        Signal::new(tree_empty_nonogram_solution())
-    });
-    use_context_provider(|| {
-        info!("Initializing nonogram editor state");
-        Signal::new(NonogramData {
-            filename: String::new(),
-            block_size: 40,
-            start: None,
-            end: None,
-        })
-    });
-
-    rsx! {
-        main { class: "flex flex-col gap-10 items-center min-h-screen mb-20",
-            h1 { class: "text-4xl font-bold my-10 text-center", {t!("title_nonogram_editor")} }
-            Toolbar {}
-            Nonogram {}
-        }
-    }
-}
-
-#[component]
-fn Toolbar() -> Element {
-    let mut use_solution = use_context::<Signal<NonogramSolution>>();
-    let mut use_palette = use_context::<Signal<NonogramPalette>>();
-    let mut use_data = use_context::<Signal<NonogramData>>();
-
-    // TODO!: ADD support for web an mobile (file engines)
-    let save_nonogram_onclick = move |_| async move {
-        info!("Saving nonogram...");
-        let puzzle = NonogramPuzzle::from_solution(&use_solution());
-        let mut palette = use_palette().clone();
-        palette.brush = 0;
-        let file = NonogramFile { puzzle, palette };
-
-        match serde_json::to_string(&file) {
-            Ok(json) => {
-                let filename = if use_data().filename.is_empty() {
-                    String::from("nonogram")
-                } else {
-                    use_data().filename.to_string()
-                };
-                let filename = format!("artifacts/{filename}.ngram");
-                match File::create(&filename) {
-                    Ok(mut file) => match file.write(json.as_bytes()) {
-                        Ok(_) => {
-                            info!("Nonogram '{}' saved successfully!", filename);
-                        }
-                        Err(err) => {
-                            error!("Failed to write to file '{}': {}", filename, err);
-                        }
-                    },
-                    Err(err) => {
-                        error!("Failed to create the file '{}': {}", filename, err);
-                    }
-                }
-            }
-            Err(err) => {
-                error!("Failed to serialize the nonogram: {}", err);
-            }
-        }
-    };
-
-    rsx! {
-        section { class: "container flex flex-col space-y-6 p-6 rounded-lg shadow-lg bg-gray-900",
-            div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
-                div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
-                    label {
-                        r#for: "rows-input",
-                        class: "py-2 text-gray-200 font-semibold cursor-pointer",
-                        {t!("label_rows")}
-                        ":"
-                    }
-                    input {
-                        id: "rows-input",
-                        class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
-                        r#type: "number",
-                        min: "2",
-                        max: "40",
-                        onchange: move |event| {
-                            if let Ok(rows) = event.value().parse::<usize>() {
-                                if (2..=40).contains(&rows) {
-                                    use_solution.write().set_rows(rows);
-                                }
-                            }
-                        },
-                        value: use_solution().rows(),
-                    }
-                }
-                div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
-                    label {
-                        r#for: "cols-input",
-                        class: "py-2 text-gray-200 font-semibold cursor-pointer",
-                        {t!("label_columns")}
-                        ":"
-                    }
-                    input {
-                        id: "cols-input",
-                        class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
-                        r#type: "number",
-                        min: "2",
-                        max: "40",
-                        onchange: move |event: FormEvent| {
-                            if let Ok(cols) = event.value().parse::<usize>() {
-                                if (2..=40).contains(&cols) {
-                                    use_solution.write().set_cols(cols);
-                                }
-                            }
-                        },
-                        value: use_solution().cols(),
-                    }
-                }
-                div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
-                    label {
-                        r#for: "size-input",
-                        class: "py-2 text-gray-200 font-semibold cursor-pointer",
-                        {t!("label_size")}
-                        ":"
-                    }
-                    input {
-                        id: "size-input",
-                        class: "appearance-none px-2 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
-                        r#type: "number",
-                        min: "10",
-                        max: "100",
-                        step: "5",
-                        onchange: move |event: FormEvent| {
-                            if let Ok(size) = event.value().parse::<usize>() {
-                                if (10..=100).contains(&size) {
-                                    use_data.write().block_size = size;
-                                }
-                            }
-                        },
-                        value: use_data().block_size,
-                    }
-                }
-            }
-            div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
-                div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-2",
-                    label {
-                        r#for: "name-input",
-                        class: " py-2 text-gray-200 font-semibold cursor-pointer",
-                        {t!("label_save_nonogram")}
-                        ":"
-                    }
-                    input {
-                        id: "name-input",
-                        class: "appearance-none px-4 py-1 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
-                        r#type: "text",
-                        placeholder: t!("label_save_nonogram"),
-                        onchange: move |event| {
-                            use_data.write().filename = event.value();
-                        },
-                        value: "{use_data().filename}",
-                    }
-                }
-                button {
-                    class: "px-4 py-1 font-bold rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800  focus:outline-none focus:ring focus:ring-blue-300",
-                    onclick: save_nonogram_onclick,
-                    {t!("button_save_nonogram")}
-                }
-            }
-            div { class: "flex flex-wrap justify-items-center justify-center items-center gap-6",
-                for (i , color) in use_palette().color_palette.iter().enumerate() {
-                    button {
-                        key: "brush-{i}",
-                        style: "background-color: {color}",
-                        class: "w-10 h-10 rounded-full border border-gray-400 hover:bg-gray-600 transition-transform transform hover:scale-125",
-                        onclick: move |event| {
-                            if event.modifiers().shift()
-                                || event.modifiers().ctrl() && use_palette().len() > 1
-                            {
-                                info!("Deleted brush color: {}", use_palette().show_brush());
-                                use_palette.write().remove_color(i);
-                                info!("Changed brush color: {}", use_palette().show_brush());
-                            } else {
-                                use_palette.write().brush = i;
-                                info!("Changed brush color: {}", use_palette().show_brush());
-                            }
-                        },
-                    }
-                }
-                button {
-                    class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-gray-600 transition-transform transform hover:scale-125",
-                    onclick: move |_| {
-                        let palette_len = use_palette().len();
-                        let getter = if palette_len < DEFAULT_PALETTE.len() {
-                            use_palette
-                                .write()
-                                .add_color(String::from(DEFAULT_PALETTE.get(palette_len)));
-                            "default"
-                        } else {
-                            let mut rng = rand::thread_rng();
-                            let random_color = format!(
-                                "#{:02x}{:02x}{:02x}",
-                                rng.gen_range(0..256),
-                                rng.gen_range(0..256),
-                                rng.gen_range(0..256),
-                            );
-                            use_palette.write().add_color(random_color);
-                            "random"
-                        };
-                        use_palette.write().brush = palette_len;
-                        info!("New {} palette color: {}", getter, use_palette().show_brush());
-                    },
-                    Icon {
-                        class: "w-full h-full",
-                        fill: "rgb(156, 163, 175)",
-                        icon: FaPlus,
-                    }
-                }
-            }
-        }
-    }
-}
-
-// TODO!: Change color based in the RGB instead of only white, maybe change_color(rgb: String) -> bool
-#[component]
-fn Nonogram() -> Element {
-    let mut use_palette = use_context::<Signal<NonogramPalette>>();
-    rsx! {
-        section { class: "mb-20",
-            table { class: "border-separate border-spacing-4",
-                thead {
-                    tr {
-                        th { class: "align-bottom",
-                            div { class: "flex justify-end",
-                                input {
-                                    r#type: "color",
-                                    class: "appearance-none w-10 h-10 border outline-none transition-transform transform hover:scale-125 focus:ring focus:ring-blue-500 focus:outline-none cursor-pointer",
-                                    value: "{use_palette().get_current()}",
-                                    onchange: move |event| {
-                                        use_palette.write().set_current(event.value());
-                                        info!("Change brush color {}", use_palette().show_brush());
-                                    },
-                                }
-                            }
-                        }
-                        th { class: "align-bottom", ColConstraints {} }
-                    }
-                }
-                tbody {
-                    tr {
-                        th { class: "flex justify-end", RowConstraints {} }
-                        td { Solution {} }
                     }
                 }
             }
