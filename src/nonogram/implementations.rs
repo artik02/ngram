@@ -188,51 +188,32 @@ impl NonogramSolution {
 }
 
 impl NonogramPalette {
-    pub fn get(&self, index: usize) -> &str {
-        &self.color_palette[index]
-    }
-
-    pub fn brush(&self) -> usize {
-        self.brush_color
-    }
-
     pub fn len(&self) -> usize {
         self.color_palette.len()
     }
 
-    pub fn set_color(&mut self, color: String) {
-        self.color_palette[self.brush_color] = color;
+    pub fn get(&self, index: usize) -> &str {
+        &self.color_palette[index]
     }
 
-    pub fn set(&mut self, brush_color: usize) {
-        self.brush_color = brush_color;
+    pub fn set_current(&mut self, color: String) {
+        self.color_palette[self.brush] = color;
     }
 
-    pub fn take(&self, index: usize) -> Self {
-        Self {
-            color_palette: self.color_palette[0..index].to_vec(),
-            brush_color: 0,
-        }
+    pub fn get_current(&self) -> &str {
+        &self.color_palette[self.brush]
     }
 
-    pub fn get_color(&self) -> &str {
-        &self.color_palette[self.brush_color]
-    }
-
-    pub fn push_color(&mut self, color: String) {
+    pub fn add_color(&mut self, color: String) {
         self.color_palette.push(color);
     }
 
     pub fn remove_color(&mut self, index: usize) {
         self.color_palette.remove(index);
-        self.brush_color = 0.max(self.brush_color as isize - 1) as usize;
+        self.brush = 0.max(self.brush as isize - 1isize) as usize;
     }
 
     pub fn show_brush(&self) -> String {
-        format!(
-            "{} -> {}",
-            self.brush_color + 1,
-            self.color_palette[self.brush_color]
-        )
+        format!("{} -> {}", self.brush, self.get_current())
     }
 }

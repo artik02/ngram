@@ -28,7 +28,8 @@ use crate::define_palette;
 #[derive(Clone, Deserialize, Serialize)]
 pub struct NonogramPalette {
     pub color_palette: Vec<String>,
-    pub brush_color: usize,
+    #[serde(skip_serializing, default)]
+    pub brush: usize,
 }
 
 pub const BACKGROUND: usize = 0;
@@ -65,17 +66,16 @@ pub struct NonogramSolution {
     pub solution_grid: Vec<Vec<usize>>,
 }
 
-#[derive(Clone)]
-pub struct NonogramEditor {
-    pub palette: NonogramPalette,
-    pub nonogram: NonogramSolution,
-    pub size: usize,
-    pub start: Option<(usize, usize)>,
-    pub end: Option<(usize, usize)>,
-}
-
 #[derive(Deserialize, Serialize)]
 pub struct NonogramFile {
     pub puzzle: NonogramPuzzle,
     pub palette: NonogramPalette,
+}
+
+#[derive(Clone)]
+pub struct NonogramData {
+    pub filename: String,
+    pub block_size: usize,
+    pub start: Option<(usize, usize)>,
+    pub end: Option<(usize, usize)>,
 }

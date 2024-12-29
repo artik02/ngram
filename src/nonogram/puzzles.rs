@@ -39,6 +39,6 @@ pub fn tree_nonogram_palette() -> NonogramPalette {
             String::from("#228b22"),
             String::from("#8b4513"),
         ],
-        brush_color: 0,
+        brush: 0,
     }
 }
