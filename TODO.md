@@ -4,6 +4,7 @@
 
 - [X] Fix nonogram editor styles on all platforms
 - [ ] Fix nonogram constraints text color on web
+- [ ] Fix width of the nonogram loading on mobile
 - [X] Fix white or bright rgb colors borders to black
 - [ ] Fix wonkiness on the editor when updating rows or columns contraints
 - [ ] Make nav bar visible on mobile
@@ -44,6 +45,7 @@
 ## Chores
 
 - [ ] Change nonogram puzzle example
+- [ ] Update initial block_size for mobile
 - [X] Rework nonoram editor state with global context
 - [ ] Move nonogram components in it's own modules
     + [X] Rework toolbar component
