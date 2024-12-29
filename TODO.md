@@ -30,7 +30,7 @@
     + [X] Develop a usable design
         * [X] Reintegrate color palette
         * [X] Reintegrate nonogram visualization
-        * [ ] Show read-only cols and rows on solver
+        * [X] Show read-only cols and rows on solver
         * [ ] Add an absolut coordinate label
     + [X] Integrate nonogram loading
     + [X] Integrate reactive constraints on solver
