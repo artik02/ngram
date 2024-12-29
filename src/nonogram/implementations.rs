@@ -295,6 +295,12 @@ impl NonogramPalette {
         }
     }
 
+    pub fn set_brush(&mut self, index: usize) {
+        if let Some(_) = self.color_palette.get(index) {
+            self.brush = index;
+        }
+    }
+
     pub fn show_brush(&self) -> String {
         format!("{} -> {}", self.brush, self.get_current())
     }
