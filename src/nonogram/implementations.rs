@@ -39,6 +39,63 @@ impl NonogramPuzzle {
             col_constraints,
         }
     }
+
+    fn diff_constraints(
+        current_constraints: &Vec<Vec<NonogramSegment>>,
+        expected_constraints: &Vec<Vec<NonogramSegment>>,
+    ) -> Vec<Vec<NonogramSegment>> {
+        let mut diff_constraints = Vec::new();
+        for (current_segments, expected_segments) in
+            current_constraints.iter().zip(expected_constraints.iter())
+        {
+            let mut diff_segments = expected_segments.clone();
+            let mut expected_base_index = 0;
+            let mut deleted_base_index = 0;
+            let expected_segments = expected_segments
+                .iter()
+                .enumerate()
+                .collect::<Vec<(usize, &NonogramSegment)>>();
+            for current in current_segments.iter() {
+                for (i, expected) in expected_segments[expected_base_index..].iter() {
+                    if current.segment_color == expected.segment_color {
+                        expected_base_index = i + 1;
+                        let diff =
+                            expected.segment_length as isize - current.segment_length as isize;
+                        if diff > 0 {
+                            // Update expected segment with less length
+                            diff_segments[i - deleted_base_index] =
+                                nrule!(expected.segment_color, diff as usize);
+                        } else if diff == 0 {
+                            // Delete the expected segment
+                            diff_segments
+                                .remove((*i as isize - deleted_base_index as isize) as usize);
+                            deleted_base_index += 1;
+                        } else {
+                            // Leave expected segment as is
+                        }
+                        // Advance with next expected
+                        break;
+                    } // Advance with next current segment
+                }
+            }
+            diff_constraints.push(diff_segments);
+        }
+        diff_constraints
+    }
+
+    /// Computes the difference for row and column constraints.
+    pub fn diff(&self, expected: &Self) -> Self {
+        let row_constraints =
+            Self::diff_constraints(&self.row_constraints, &expected.row_constraints);
+        let col_constraints =
+            Self::diff_constraints(&self.col_constraints, &expected.col_constraints);
+        Self {
+            rows: self.rows,
+            cols: self.cols,
+            row_constraints,
+            col_constraints,
+        }
+    }
 }
 
 impl NonogramSolution {
@@ -188,51 +245,62 @@ impl NonogramSolution {
 }
 
 impl NonogramPalette {
-    pub fn get(&self, index: usize) -> &str {
-        &self.color_palette[index]
-    }
-
-    pub fn brush(&self) -> usize {
-        self.brush_color
-    }
-
     pub fn len(&self) -> usize {
         self.color_palette.len()
     }
 
-    pub fn set_color(&mut self, color: String) {
-        self.color_palette[self.brush_color] = color;
+    pub fn get(&self, index: usize) -> &str {
+        &self.color_palette[index]
     }
 
-    pub fn set(&mut self, brush_color: usize) {
-        self.brush_color = brush_color;
+    pub fn set_current(&mut self, color: String) {
+        self.color_palette[self.brush] = color;
     }
 
-    pub fn take(&self, index: usize) -> Self {
-        Self {
-            color_palette: self.color_palette[0..index].to_vec(),
-            brush_color: 0,
-        }
+    pub fn get_current(&self) -> &str {
+        &self.color_palette[self.brush]
     }
 
-    pub fn get_color(&self) -> &str {
-        &self.color_palette[self.brush_color]
-    }
-
-    pub fn push_color(&mut self, color: String) {
+    pub fn add_color(&mut self, color: String) {
         self.color_palette.push(color);
     }
 
     pub fn remove_color(&mut self, index: usize) {
         self.color_palette.remove(index);
-        self.brush_color = 0.max(self.brush_color as isize - 1) as usize;
+        self.brush = 0.max(self.brush as isize - 1isize) as usize;
     }
 
     pub fn show_brush(&self) -> String {
-        format!(
-            "{} -> {}",
-            self.brush_color + 1,
-            self.color_palette[self.brush_color]
-        )
+        format!("{} -> {}", self.brush, self.get_current())
+    }
+
+    pub fn text_color(&self, background: usize) -> String {
+        let background = self.get(background);
+        if let Some((r, g, b)) = Self::parse_color(background) {
+            let r = r as f32 / 255.0;
+            let g = g as f32 / 255.0;
+            let b = b as f32 / 255.0;
+
+            let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+            if luminance > 0.5 {
+                "#000000".to_string()
+            } else {
+                "#ffffff".to_string()
+            }
+        } else {
+            "#ffffff".to_string()
+        }
+    }
+
+    fn parse_color(color: &str) -> Option<(u8, u8, u8)> {
+        if color.starts_with('#') && color.len() == 7 {
+            let r = u8::from_str_radix(&color[1..3], 16).ok()?;
+            let g = u8::from_str_radix(&color[3..5], 16).ok()?;
+            let b = u8::from_str_radix(&color[5..7], 16).ok()?;
+            Some((r, g, b))
+        } else {
+            None
+        }
     }
 }

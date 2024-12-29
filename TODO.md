@@ -3,6 +3,9 @@
 ## Fixes
 
 - [X] Fix nonogram editor styles on all platforms
+- [ ] Fix nonogram constraints text color on web
+- [ ] Fix width of the nonogram loading on mobile
+- [X] Fix white or bright rgb colors borders to black
 - [ ] Fix wonkiness on the editor when updating rows or columns contraints
 - [ ] Make nav bar visible on mobile
 - [ ] Make drawing multiple blocks work on mobile
@@ -23,11 +26,14 @@
     + [ ] Add nonogram slide buttons
     + [ ] Add nonogram brush size option
     + [ ] Add nonogram loading (rewrite file handling)
-- [ ] Add nonogram puzzle solver
-    + [ ] Develop a usable design
-        * [ ] Reintegrate color palette
-        * [ ] Reintegrate nonogram visualization
-    + [ ] Integrate nonogram loading
+- [X] Add nonogram puzzle solver
+    + [X] Develop a usable design
+        * [X] Reintegrate color palette
+        * [X] Reintegrate nonogram visualization
+        * [ ] Show read-only cols and rows on solver
+        * [ ] Add an absolut coordinate label
+    + [X] Integrate nonogram loading
+    + [X] Integrate reactive constraints on solver
     + [ ] Nonogram evaluation function
     + [ ] Add evolutive search to solve nonograms
         * [ ] Develop evolutive algorithms
@@ -38,6 +44,11 @@
 
 ## Chores
 
+- [ ] Change nonogram puzzle example
+- [ ] Update initial block_size for mobile
+- [X] Rework nonoram editor state with global context
+- [ ] Move nonogram components in it's own modules
+    + [X] Rework toolbar component
 - [x] Move editor to nonogram module
 - [ ] Document the code
 - [ ] Document in detail

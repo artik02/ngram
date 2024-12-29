@@ -26,7 +26,7 @@ macro_rules! define_palette {
         pub static $name: std::sync::LazyLock<crate::nonogram::definitions::NonogramPalette> = std::sync::LazyLock::new(|| {
             crate::nonogram::definitions::NonogramPalette {
                 color_palette: vec![$(String::from($color)),+],
-                brush_color: 0,
+                brush: 0,
             }
         });
     };

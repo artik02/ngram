@@ -21,15 +21,14 @@
 # SOFTWARE.
 
 # es-MX.ftl
-hello_world = Hola mundo
-title_home = Inicio
+title_nonogram_solver =  Resolver Nonograma
 title_nonogram_editor = Editor de Nonograma
+label_load_nonogram = Cargar Nonograma
 label_columns = Columnas
 label_rows = Filas
 label_save_nonogram = Nombre
 label_size = Tamaño (px)
 button_save_nonogram = Guardar Nonograma
-label_load_nonogram = Cargar Nonograma
 
 # no traducible
 lang_en_US = English of United States

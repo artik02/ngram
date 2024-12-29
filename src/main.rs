@@ -35,9 +35,10 @@ mod nonogram {
     pub mod genetic;
     pub mod implementations;
     pub mod macros;
+    pub mod puzzles;
 }
 
-use nonogram::component::Editor;
+use nonogram::component::{Editor, Solver};
 
 mod localization {
     use dioxus_i18n::unic_langid::{langid, LanguageIdentifier};
@@ -53,7 +54,7 @@ use localization::*;
 enum Route {
     #[layout(Header)]
     #[route("/")]
-    Home {},
+    Solver {},
     #[route("/editor")]
     Editor {},
 }
@@ -116,13 +117,13 @@ fn Header() -> Element {
     rsx! {
         div { class: "mx-auto flex items-center justify-between py-4 px-6 bg-gray-800",
             div { class: "text-white text-2xl font-bold",
-                Link { to: Route::Home {}, "NGRAM" }
+                Link { to: Route::Solver {}, "NGRAM" }
             }
             div { class: "flex-1 mx-4 overflow-x-auto whitespace-nowrap flex items-center gap-2",
                 Link {
-                    to: Route::Home {},
+                    to: Route::Solver {},
                     class: "inline-block text-white text-xl",
-                    {t!("title_home")}
+                    {t!("title_nonogram_solver")}
                 }
                 span { class: "text-white", "|" }
                 Link {
@@ -140,14 +141,5 @@ fn Header() -> Element {
             }
         }
         Outlet::<Route> {}
-    }
-}
-
-#[component]
-fn Home() -> Element {
-    rsx! {
-        div { class: "container mx-auto flex items-center justify-center min-h-screen",
-            h1 { class: "text-4xl text-center font-bold", {t!("hello_world")} }
-        }
     }
 }
