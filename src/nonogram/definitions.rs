@@ -47,7 +47,7 @@ define_palette!(
     "#deb887"  // Light Brown (Soft, like beige)
 );
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct NonogramSegment {
     pub segment_color: usize,
     pub segment_length: usize,

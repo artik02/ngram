@@ -131,7 +131,7 @@ fn SolverToolbar() -> Element {
                         r#type: "number",
                         min: "10",
                         max: "100",
-                        step: "10",
+                        step: "5",
                         value: use_data().block_size,
                         onchange: move |event| {
                             if let Ok(size) = event.value().parse::<usize>() {
@@ -215,10 +215,13 @@ fn SolverNonogram() -> Element {
 #[component]
 fn SolverColConstraints() -> Element {
     let use_puzzle = use_context::<Signal<NonogramPuzzle>>();
+    let use_solution = use_context::<Signal<NonogramSolution>>();
     let use_palette = use_context::<Signal<NonogramPalette>>();
     let use_data = use_context::<Signal<NonogramData>>();
 
-    let max_table_rows = use_puzzle()
+    let current_puzzle = NonogramPuzzle::from_solution(&use_solution());
+    let diff_puzzle = current_puzzle.diff(&use_puzzle());
+    let max_table_rows = diff_puzzle
         .col_constraints
         .iter()
         .map(|segments| segments.len())
@@ -233,15 +236,15 @@ fn SolverColConstraints() -> Element {
             tbody {
                 for i in 0..max_table_rows {
                     tr {
-                        for (j , segments) in use_puzzle().col_constraints.iter().enumerate() {
+                        for (j , segments) in diff_puzzle.col_constraints.iter().enumerate() {
                             if let Some(segment) = segments
                                 .get((segments.len() as isize - max_table_rows as isize + i as isize) as usize)
                             {
                                 td {
                                     key: "col-{i}-{j}",
                                     class: "border select-none",
-                                    style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; height: {use_data().block_size}px; font-size: {use_data().block_size/2}px",
-                                    color: if use_palette().color_palette[segment.segment_color] == "#ffffff" { "#000000" } else { "#ffffff" },
+                                    style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; max-width: {use_data().block_size}px; height: {use_data().block_size}px; font-size: {use_data().block_size/2}px; color: {use_palette().text_color(segment.segment_color)}",
+                                    border_color: use_palette().text_color(segment.segment_color),
                                     "{segment.segment_length}"
                                 }
                             } else {
@@ -261,10 +264,13 @@ fn SolverColConstraints() -> Element {
 #[component]
 fn SolverRowConstraints() -> Element {
     let use_puzzle = use_context::<Signal<NonogramPuzzle>>();
+    let use_solution = use_context::<Signal<NonogramSolution>>();
     let use_palette = use_context::<Signal<NonogramPalette>>();
     let use_data = use_context::<Signal<NonogramData>>();
 
-    let max_table_cols = use_puzzle()
+    let current_puzzle = NonogramPuzzle::from_solution(&use_solution());
+    let diff_puzzle = current_puzzle.diff(&use_puzzle());
+    let max_table_cols = diff_puzzle
         .row_constraints
         .iter()
         .map(|segments| segments.len())
@@ -276,7 +282,7 @@ fn SolverRowConstraints() -> Element {
             class: "max-w-min min-h-full pointer-events-none",
             draggable: false,
             tbody {
-                for (i , segments) in use_puzzle().row_constraints.iter().enumerate() {
+                for (i , segments) in diff_puzzle.row_constraints.iter().enumerate() {
                     tr {
                         for j in 0..max_table_cols {
                             if let Some(segment) = segments
@@ -285,8 +291,8 @@ fn SolverRowConstraints() -> Element {
                                 td {
                                     key: "row-{i}-{j}",
                                     class: "border select-none",
-                                    style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; max-width: {use_data().block_size}px; height: {use_data().block_size}px; font-size: {use_data().block_size/2}px",
-                                    color: if use_palette().color_palette[segment.segment_color] == "#ffffff" { "#000000" } else { "#ffffff" },
+                                    style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; max-width: {use_data().block_size}px; height: {use_data().block_size}px; font-size: {use_data().block_size/2}px; color: {use_palette().text_color(segment.segment_color)}",
+                                    border_color: use_palette().text_color(segment.segment_color),
                                     "{segment.segment_length}"
                                 }
                             } else {
@@ -439,7 +445,7 @@ fn Toolbar() -> Element {
                         r#type: "number",
                         min: "10",
                         max: "100",
-                        step: "10",
+                        step: "5",
                         onchange: move |event: FormEvent| {
                             if let Ok(size) = event.value().parse::<usize>() {
                                 if (10..=100).contains(&size) {
@@ -594,8 +600,8 @@ fn ColConstraints() -> Element {
                                 td {
                                     key: "col-{i}-{j}",
                                     class: "border select-none",
-                                    style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; height: {use_data().block_size}px; font-size: {use_data().block_size/2}px",
-                                    color: if use_palette().color_palette[segment.segment_color] == "#ffffff" { "#000000" } else { "#ffffff" },
+                                    style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; height: {use_data().block_size}px; font-size: {use_data().block_size/2}px; color: {use_palette().text_color(segment.segment_color)}",
+                                    border_color: use_palette().text_color(segment.segment_color),
                                     "{segment.segment_length}"
                                 }
                             } else {
@@ -639,8 +645,8 @@ fn RowConstraints() -> Element {
                                 td {
                                     key: "row-{i}-{j}",
                                     class: "border select-none",
-                                    style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; max-width: {use_data().block_size}px; height: {use_data().block_size}px; font-size: {use_data().block_size/2}px",
-                                    color: if use_palette().color_palette[segment.segment_color] == "#ffffff" { "#000000" } else { "#ffffff" },
+                                    style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; max-width: {use_data().block_size}px; height: {use_data().block_size}px; color: {use_palette().text_color(segment.segment_color)}",
+                                    border_color: use_palette().text_color(segment.segment_color),
                                     "{segment.segment_length}"
                                 }
                             } else {

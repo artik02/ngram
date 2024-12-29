@@ -3,6 +3,7 @@
 ## Fixes
 
 - [X] Fix nonogram editor styles on all platforms
+- [ ] Fix nonogram constraints text color on web
 - [ ] Fix white or bright rgb colors borders to black
 - [ ] Fix wonkiness on the editor when updating rows or columns contraints
 - [ ] Make nav bar visible on mobile
@@ -29,7 +30,7 @@
         * [X] Reintegrate color palette
         * [X] Reintegrate nonogram visualization
     + [X] Integrate nonogram loading
-    + [ ] Integrate reactive constraints on solver
+    + [X] Integrate reactive constraints on solver
     + [ ] Nonogram evaluation function
     + [ ] Add evolutive search to solve nonograms
         * [ ] Develop evolutive algorithms
@@ -40,6 +41,7 @@
 
 ## Chores
 
+- [ ] Change nonogram puzzle example
 - [X] Rework nonoram editor state with global context
 - [ ] Move nonogram components in it's own modules
     + [X] Rework toolbar component
