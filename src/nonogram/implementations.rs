@@ -40,7 +40,7 @@ impl NonogramPuzzle {
         }
     }
 
-    fn diff_constraints(
+    fn _diff_constraints(
         current_constraints: &Vec<Vec<NonogramSegment>>,
         expected_constraints: &Vec<Vec<NonogramSegment>>,
     ) -> Vec<Vec<NonogramSegment>> {
@@ -62,9 +62,11 @@ impl NonogramPuzzle {
                         let diff =
                             expected.segment_length as isize - current.segment_length as isize;
                         if diff > 0 {
-                            // Update expected segment with less length
-                            diff_segments[i - deleted_base_index] =
-                                nrule!(expected.segment_color, diff as usize);
+                            // // Update expected segment with less length
+                            // diff_segments[i - deleted_base_index] =
+                            //     nrule!(expected.segment_color, diff as usize);
+
+                            // Leave expected segment as is
                         } else if diff == 0 {
                             // Delete the expected segment
                             diff_segments
@@ -75,7 +77,9 @@ impl NonogramPuzzle {
                         }
                         // Advance with next expected
                         break;
-                    } // Advance with next current segment
+                    }
+                    // Add current segment with negative length (extra segment, requires rewrite with isize)
+                    // Advance with next current segment
                 }
             }
             diff_constraints.push(diff_segments);
@@ -84,11 +88,11 @@ impl NonogramPuzzle {
     }
 
     /// Computes the difference for row and column constraints.
-    pub fn diff(&self, expected: &Self) -> Self {
+    pub fn _diff(&self, expected: &Self) -> Self {
         let row_constraints =
-            Self::diff_constraints(&self.row_constraints, &expected.row_constraints);
+            Self::_diff_constraints(&self.row_constraints, &expected.row_constraints);
         let col_constraints =
-            Self::diff_constraints(&self.col_constraints, &expected.col_constraints);
+            Self::_diff_constraints(&self.col_constraints, &expected.col_constraints);
         Self {
             rows: self.rows,
             cols: self.cols,
@@ -242,6 +246,29 @@ impl NonogramSolution {
             self.solution_grid.truncate(target_rows);
         }
     }
+
+    pub fn clear(&mut self) {
+        for row_data in self.solution_grid.iter_mut() {
+            row_data.fill(0);
+        }
+    }
+
+    pub fn slide(&mut self, dx: isize, dy: isize) {
+        let rows = self.rows();
+        let cols = self.cols();
+        let mut new_grid = vec![vec![0; cols]; rows];
+        for y in 0..rows {
+            for x in 0..cols {
+                let new_x = x as isize + dx;
+                let new_y = y as isize + dy;
+
+                if (0..cols as isize).contains(&new_x) && (0..rows as isize).contains(&new_y) {
+                    new_grid[new_y as usize][new_x as usize] = self.solution_grid[y][x];
+                }
+            }
+        }
+        self.solution_grid = new_grid;
+    }
 }
 
 impl NonogramPalette {
@@ -272,6 +299,12 @@ impl NonogramPalette {
         }
     }
 
+    pub fn set_brush(&mut self, index: usize) {
+        if let Some(_) = self.color_palette.get(index) {
+            self.brush = index;
+        }
+    }
+
     pub fn show_brush(&self) -> String {
         format!("{} -> {}", self.brush, self.get_current())
     }
@@ -279,20 +312,36 @@ impl NonogramPalette {
     pub fn text_color(&self, background: usize) -> String {
         let background = self.get(background);
         if let Some((r, g, b)) = Self::parse_color(background) {
-            let r = r as f32 / 255.0;
-            let g = g as f32 / 255.0;
-            let b = b as f32 / 255.0;
-
-            let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-            if luminance > 0.5 {
-                "#000000".to_string()
-            } else {
+            if Self::is_darker(r, g, b) {
                 "#ffffff".to_string()
+            } else {
+                "#000000".to_string()
             }
         } else {
-            "#ffffff".to_string()
+            String::new()
         }
+    }
+
+    pub fn border_color(&self, background: usize) -> String {
+        let background = self.get(background);
+        if let Some((r, g, b)) = Self::parse_color(background) {
+            if Self::is_darker(r, g, b) {
+                "#ffffff".to_string()
+            } else {
+                "#9ca3af".to_string()
+            }
+        } else {
+            "#9ca3af".to_string()
+        }
+    }
+
+    fn is_darker(r: u8, g: u8, b: u8) -> bool {
+        let r = r as f32 / 255.0;
+        let g = g as f32 / 255.0;
+        let b = b as f32 / 255.0;
+
+        let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        luminance <= 0.5
     }
 
     fn parse_color(color: &str) -> Option<(u8, u8, u8)> {

@@ -47,13 +47,13 @@ define_palette!(
     "#deb887"  // Light Brown (Soft, like beige)
 );
 
-#[derive(Clone, Deserialize, Serialize, Debug)]
+#[derive(Clone, Deserialize, Serialize, PartialEq)]
 pub struct NonogramSegment {
     pub segment_color: usize,
     pub segment_length: usize,
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, PartialEq)]
 pub struct NonogramPuzzle {
     pub rows: usize,
     pub cols: usize,
