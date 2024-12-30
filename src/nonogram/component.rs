@@ -205,8 +205,8 @@ fn RowsInput(readonly: bool) -> Element {
         div { class: "flex flex-row justify-items-center justify-center items-center gap-3",
             label {
                 r#for: "rows-input",
-                class: "py-2 text-gray-200 font-semibold select-none",
-                cursor: if !readonly { "pointer" },
+                class: "py-2 text-gray-200 font-semibold cursor-pointer select-none",
+                pointer_events: if readonly { "none" },
                 color: if readonly { "darkgray" },
                 {t!("label_rows")}
                 ":"
@@ -214,7 +214,7 @@ fn RowsInput(readonly: bool) -> Element {
             input {
                 id: "rows-input",
                 class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 active:scale-125 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
-                cursor: if !readonly { "pointer" } else { "default" },
+                pointer_events: if readonly { "none" },
                 color: if readonly { "darkgray" },
                 readonly,
                 r#type: "number",
@@ -241,7 +241,7 @@ fn ColumnsInput(readonly: bool) -> Element {
             label {
                 r#for: "cols-input",
                 class: "py-2 text-gray-200 font-semibold cursor-pointer select-none",
-                cursor: if !readonly { "pointer" },
+                pointer_events: if readonly { "none" },
                 color: if readonly { "darkgray" },
                 {t!("label_columns")}
                 ":"
@@ -249,7 +249,7 @@ fn ColumnsInput(readonly: bool) -> Element {
             input {
                 id: "cols-input",
                 class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 active:scale-125 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
-                cursor: if !readonly { "pointer" } else { "default" },
+                pointer_events: if readonly { "none" },
                 color: if readonly { "darkgray" },
                 readonly,
                 r#type: "number",
