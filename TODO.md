@@ -27,7 +27,7 @@
     + [X] Add nonogram slide buttons
     + [ ] Add nonogram brush size option
         * [ ] Rewrite drawing logic
-    + [ ] Add nonogram loading (rewrite file handling)
+    + [X] Add nonogram loading
 - [X] Add nonogram puzzle solver
     + [X] Develop a usable design
         * [X] Reintegrate color palette
