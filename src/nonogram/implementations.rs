@@ -62,9 +62,11 @@ impl NonogramPuzzle {
                         let diff =
                             expected.segment_length as isize - current.segment_length as isize;
                         if diff > 0 {
-                            // Update expected segment with less length
-                            diff_segments[i - deleted_base_index] =
-                                nrule!(expected.segment_color, diff as usize);
+                            // // Update expected segment with less length
+                            // diff_segments[i - deleted_base_index] =
+                            //     nrule!(expected.segment_color, diff as usize);
+
+                            // Leave expected segment as is
                         } else if diff == 0 {
                             // Delete the expected segment
                             diff_segments
@@ -75,7 +77,9 @@ impl NonogramPuzzle {
                         }
                         // Advance with next expected
                         break;
-                    } // Advance with next current segment
+                    }
+                    // Add current segment with negative length (extra segment, requires rewrite with isize)
+                    // Advance with next current segment
                 }
             }
             diff_constraints.push(diff_segments);
@@ -308,20 +312,36 @@ impl NonogramPalette {
     pub fn text_color(&self, background: usize) -> String {
         let background = self.get(background);
         if let Some((r, g, b)) = Self::parse_color(background) {
-            let r = r as f32 / 255.0;
-            let g = g as f32 / 255.0;
-            let b = b as f32 / 255.0;
-
-            let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-            if luminance > 0.5 {
-                "#000000".to_string()
-            } else {
+            if Self::is_darker(r, g, b) {
                 "#ffffff".to_string()
+            } else {
+                "#000000".to_string()
             }
         } else {
-            "#ffffff".to_string()
+            String::new()
         }
+    }
+
+    pub fn border_color(&self, background: usize) -> String {
+        let background = self.get(background);
+        if let Some((r, g, b)) = Self::parse_color(background) {
+            if Self::is_darker(r, g, b) {
+                "#ffffff".to_string()
+            } else {
+                "#9ca3af".to_string()
+            }
+        } else {
+            "#9ca3af".to_string()
+        }
+    }
+
+    fn is_darker(r: u8, g: u8, b: u8) -> bool {
+        let r = r as f32 / 255.0;
+        let g = g as f32 / 255.0;
+        let b = b as f32 / 255.0;
+
+        let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        luminance <= 0.5
     }
 
     fn parse_color(color: &str) -> Option<(u8, u8, u8)> {

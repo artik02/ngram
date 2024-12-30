@@ -39,6 +39,15 @@ use dioxus_free_icons::Icon;
 use dioxus_i18n::t;
 use rand::Rng;
 
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn get_block_size() -> usize {
+    30
+}
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn get_block_size() -> usize {
+    40
+}
+
 #[component]
 pub fn Solver() -> Element {
     std::panic::set_hook(Box::new(|info| {
@@ -59,8 +68,8 @@ pub fn Solver() -> Element {
     use_context_provider(|| {
         info!("Initializing nonogram editor state");
         Signal::new(NonogramData {
-            filename: String::new(),
-            block_size: 40,
+            filename: String::from("tree.ngram"),
+            block_size: get_block_size(),
             start: None,
             end: None,
         })
@@ -85,7 +94,8 @@ fn SolverToolbar() -> Element {
                 BlockSizeInput {}
             }
             div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
-                FileLoadInput {}
+                FileLoadButton {}
+                FileInput { readonly: true }
             }
             div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
                 ClearSolutionButton {}
@@ -100,18 +110,26 @@ fn SolverToolbar() -> Element {
 
 #[component]
 fn SolverNonogram() -> Element {
+    let use_solution = use_context::<Signal<NonogramSolution>>();
+    let use_puzzle = use_context::<Signal<NonogramPuzzle>>();
+    let current_puzzle = NonogramPuzzle::from_solution(&use_solution());
+    let diff_puzzle = current_puzzle.diff(&use_puzzle());
     rsx! {
         section { class: "mb-20",
             table { class: "border-separate border-spacing-4",
                 thead {
                     tr {
                         th { class: "align-bottom", ColorInput {} }
-                        th { class: "align-bottom", SolverColConstraints {} }
+                        th { class: "align-bottom",
+                            ColumnsConstraints { puzzle: diff_puzzle.clone() }
+                        }
                     }
                 }
                 tbody {
                     tr {
-                        th { class: "flex justify-end", SolverRowConstraints {} }
+                        th { class: "flex justify-end",
+                            RowsConstraints { puzzle: diff_puzzle }
+                        }
                         td { Solution {} }
                     }
                 }
@@ -137,7 +155,7 @@ pub fn Editor() -> Element {
         info!("Initializing nonogram editor state");
         Signal::new(NonogramData {
             filename: String::new(),
-            block_size: 40,
+            block_size: get_block_size(),
             start: None,
             end: None,
         })
@@ -162,7 +180,8 @@ fn EditorToolbar() -> Element {
                 BlockSizeInput {}
             }
             div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
-                FileSaveInput {}
+                FileInput { readonly: false }
+                FileSaveButton {}
             }
             div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
                 ClearSolutionButton {}
@@ -178,18 +197,24 @@ fn EditorToolbar() -> Element {
 
 #[component]
 fn EditorNonogram() -> Element {
+    let use_solution = use_context::<Signal<NonogramSolution>>();
+    let current_puzzle = NonogramPuzzle::from_solution(&use_solution());
     rsx! {
         section { class: "mb-20",
             table { class: "border-separate border-spacing-4",
                 thead {
                     tr {
                         th { class: "align-bottom", ColorInput {} }
-                        th { class: "align-bottom", ColConstraints {} }
+                        th { class: "align-bottom",
+                            ColumnsConstraints { puzzle: current_puzzle.clone() }
+                        }
                     }
                 }
                 tbody {
                     tr {
-                        th { class: "flex justify-end", RowConstraints {} }
+                        th { class: "flex justify-end",
+                            RowsConstraints { puzzle: current_puzzle }
+                        }
                         td { Solution {} }
                     }
                 }
@@ -213,7 +238,7 @@ fn RowsInput(readonly: bool) -> Element {
             }
             input {
                 id: "rows-input",
-                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 active:scale-125 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
+                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-110 active:scale-125 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
                 pointer_events: if readonly { "none" },
                 color: if readonly { "darkgray" },
                 readonly,
@@ -248,7 +273,7 @@ fn ColumnsInput(readonly: bool) -> Element {
             }
             input {
                 id: "cols-input",
-                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 active:scale-125 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
+                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-110 active:scale-125 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
                 pointer_events: if readonly { "none" },
                 color: if readonly { "darkgray" },
                 readonly,
@@ -281,7 +306,7 @@ fn BlockSizeInput() -> Element {
             }
             input {
                 id: "size-input",
-                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 active:scale-125 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
+                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-110 active:scale-125 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
                 r#type: "number",
                 min: "10",
                 max: "100",
@@ -300,74 +325,16 @@ fn BlockSizeInput() -> Element {
 }
 
 #[component]
-fn FileLoadInput() -> Element {
-    let mut use_puzzle = use_context::<Signal<NonogramPuzzle>>();
-    let mut use_solution = use_context::<Signal<NonogramSolution>>();
-    let mut use_palette = use_context::<Signal<NonogramPalette>>();
-    let mut use_data = use_context::<Signal<NonogramData>>();
-    let load_nonogram_onclick = move |event: FormEvent| async move {
-        info!("Loading nonogram...");
-        match &event.files() {
-            Some(file_engine) => {
-                let files = file_engine.files();
-                match files.get(0) {
-                    Some(file) => match file_engine.read_file_to_string(file).await {
-                        Some(json) => match serde_json::from_str::<NonogramFile>(&json) {
-                            Ok(nonogram_file) => {
-                                *use_puzzle.write() = nonogram_file.puzzle;
-                                *use_palette.write() = nonogram_file.palette;
-                                use_data.write().filename = file.clone();
-                                use_solution.write().set_cols(use_puzzle().cols);
-                                use_solution.write().set_rows(use_puzzle().rows);
-                                info!("Nonogram loaded correctly!");
-                            }
-                            Err(err) => {
-                                error!("Couldn't deserialize file '{file}': {err}");
-                            }
-                        },
-                        None => {
-                            error!("Couldn't read file: '{file}'");
-                        }
-                    },
-                    None => {
-                        error!("File engine had no attached files");
-                    }
-                }
-            }
-            None => {
-                error!("Event hadn't a file engine attached: {event:?}");
-            }
-        }
-    };
-    rsx! {
-        div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
-            label {
-                r#for: "file-input",
-                class: "py-2 text-gray-200 font-semibold cursor-pointer",
-                {t!("label_load_nonogram")}
-                ":"
-            }
-            input {
-                id: "file-input",
-                class: "px-4 py-1",
-                r#type: "file",
-                accept: ".ngram",
-                multiple: false,
-                onchange: load_nonogram_onclick,
-            }
-        }
-    }
-}
-
-#[component]
 fn ClearSolutionButton() -> Element {
     let mut use_solution = use_context::<Signal<NonogramSolution>>();
     rsx! {
         button {
             class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
-            onclick: move |_| {
-                use_solution.write().clear();
-                info!("Cleared the nonogram solution grid");
+            onclick: move |event| {
+                if event.modifiers().ctrl() || event.modifiers().shift() {
+                    use_solution.write().clear();
+                    info!("Cleared the nonogram solution grid");
+                }
             },
             Icon {
                 class: "w-11/12 h-11/12",
@@ -477,7 +444,7 @@ fn ColorPalette(readonly: bool) -> Element {
             button {
                 key: "brush-{i}",
                 style: "background-color: {color}",
-                class: "w-10 h-10 rounded-full border border-gray-400 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
+                class: "w-10 h-10 rounded-full hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
                 onclick: move |event| {
                     if readonly || !(event.modifiers().ctrl() || event.modifiers().shift())
                         || use_palette().len() == 1
@@ -495,10 +462,106 @@ fn ColorPalette(readonly: bool) -> Element {
 }
 
 #[component]
-fn FileSaveInput() -> Element {
+fn FileInput(readonly: bool) -> Element {
+    let mut use_data = use_context::<Signal<NonogramData>>();
+    rsx! {
+        div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-3",
+            label {
+                r#for: "name-input",
+                class: " py-2 text-gray-200 font-semibold cursor-pointer select-none",
+                pointer_events: if readonly { "none" },
+                color: if readonly { "darkgray" },
+                {t!("label_save_nonogram")}
+                ":"
+            }
+            div {
+                class: "hover:scale-105 active:scale-110 transition-transform transform",
+                style: "display: inline-block;",
+                pointer_events: if readonly { "none" },
+                input {
+                    id: "name-input",
+                    class: "appearance-none px-4 py-1 pr-16 w-min rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
+                    pointer_events: if readonly { "none" },
+                    color: if readonly { "darkgray" },
+                    readonly,
+                    r#type: "text",
+                    placeholder: t!("label_save_nonogram"),
+                    onchange: move |event| {
+                        use_data.write().filename = event.value();
+                    },
+                    value: "{use_data().filename}",
+                }
+                if !use_data().filename.contains(".ngram") {
+                    span {
+                        class: "absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400",
+                        style: "font-family: monospace; color: darkgray;",
+                        ".ngram"
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn FileLoadButton() -> Element {
+    let mut use_puzzle = use_context::<Signal<NonogramPuzzle>>();
+    let mut use_solution = use_context::<Signal<NonogramSolution>>();
+    let mut use_palette = use_context::<Signal<NonogramPalette>>();
+    let mut use_data = use_context::<Signal<NonogramData>>();
+    let load_nonogram_onclick = move |event: FormEvent| async move {
+        info!("Loading nonogram...");
+        match &event.files() {
+            Some(file_engine) => {
+                let files = file_engine.files();
+                match files.get(0) {
+                    Some(file) => match file_engine.read_file_to_string(file).await {
+                        Some(json) => match serde_json::from_str::<NonogramFile>(&json) {
+                            Ok(nonogram_file) => {
+                                *use_puzzle.write() = nonogram_file.puzzle;
+                                *use_palette.write() = nonogram_file.palette;
+                                use_data.write().filename = file.clone();
+                                use_solution.write().set_cols(use_puzzle().cols);
+                                use_solution.write().set_rows(use_puzzle().rows);
+                                info!("Nonogram loaded correctly!");
+                            }
+                            Err(err) => {
+                                error!("Couldn't deserialize file '{file}': {err}");
+                            }
+                        },
+                        None => {
+                            error!("Couldn't read file: '{file}'");
+                        }
+                    },
+                    None => {
+                        error!("File engine had no attached files");
+                    }
+                }
+            }
+            None => {
+                error!("Event hadn't a file engine attached: {event:?}");
+            }
+        }
+    };
+    rsx! {
+        button { class: "px-4 py-1 max-h-min font-bold rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-110 active:scale-125 transition-transform transform cursor-pointer",
+            {t!("button_load_nonogram")}
+            input {
+                class: "absolute top-0 left-0 h-full w-full opacity-0 rounded border hover:scale-110 active:scale-125 transition-transform transform cursor-pointer",
+                r#type: "file",
+                accept: ".ngram",
+                multiple: false,
+                onchange: load_nonogram_onclick,
+            }
+        }
+    }
+}
+
+#[component]
+fn FileSaveButton() -> Element {
     let use_solution = use_context::<Signal<NonogramSolution>>();
     let use_palette = use_context::<Signal<NonogramPalette>>();
-    let mut use_data = use_context::<Signal<NonogramData>>();
+    let use_data = use_context::<Signal<NonogramData>>();
     // TODO!: ADD support for web an mobile (file engines)
     let save_nonogram_onclick = move |_| async move {
         info!("Saving nonogram...");
@@ -509,12 +572,17 @@ fn FileSaveInput() -> Element {
 
         match serde_json::to_string(&file) {
             Ok(json) => {
-                let filename = if use_data().filename.is_empty() {
-                    String::from("nonogram")
+                let mut filename = use_data().filename.to_string();
+                if filename.is_empty() {
+                    filename = "nonogram".to_string();
+                }
+                let extension = if filename.ends_with(".ngram") {
+                    ""
                 } else {
-                    use_data().filename.to_string()
+                    ".ngram"
                 };
-                let filename = format!("artifacts/{filename}.ngram");
+                // TODO!: Allow users to save where they want (file engine)
+                let filename = format!("artifacts/{}{}", filename, extension);
                 match File::create(&filename) {
                     Ok(mut file) => match file.write(json.as_bytes()) {
                         Ok(_) => {
@@ -535,26 +603,8 @@ fn FileSaveInput() -> Element {
         }
     };
     rsx! {
-        div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-2",
-            label {
-                r#for: "name-input",
-                class: " py-2 text-gray-200 font-semibold cursor-pointer select-none",
-                {t!("label_save_nonogram")}
-                ":"
-            }
-            input {
-                id: "name-input",
-                class: "appearance-none px-4 py-1 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 active:scale-105 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
-                r#type: "text",
-                placeholder: t!("label_save_nonogram"),
-                onchange: move |event| {
-                    use_data.write().filename = event.value();
-                },
-                value: "{use_data().filename}",
-            }
-        }
         button {
-            class: "px-4 py-1 font-bold rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-105 active:scale-110 focus:outline-none focus:ring focus:ring-blue-300 transition-transform transform",
+            class: "px-4 py-1 font-bold rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-110 active:scale-125 transition-transform transform",
             onclick: save_nonogram_onclick,
             {t!("button_save_nonogram")}
         }
@@ -580,21 +630,15 @@ fn ColorInput() -> Element {
 }
 
 #[component]
-fn SolverColConstraints() -> Element {
-    let use_puzzle = use_context::<Signal<NonogramPuzzle>>();
-    let use_solution = use_context::<Signal<NonogramSolution>>();
-    let use_palette = use_context::<Signal<NonogramPalette>>();
+fn ColumnsConstraints(puzzle: NonogramPuzzle) -> Element {
     let use_data = use_context::<Signal<NonogramData>>();
-
-    let current_puzzle = NonogramPuzzle::from_solution(&use_solution());
-    let diff_puzzle = current_puzzle.diff(&use_puzzle());
-    let max_table_rows = diff_puzzle
+    let use_palette = use_context::<Signal<NonogramPalette>>();
+    let max_table_rows = puzzle
         .col_constraints
         .iter()
         .map(|segments| segments.len())
         .max()
         .unwrap_or(0);
-
     rsx! {
         table {
             id: "col-constaints-table",
@@ -603,7 +647,7 @@ fn SolverColConstraints() -> Element {
             tbody {
                 for i in 0..max_table_rows {
                     tr {
-                        for (j , segments) in diff_puzzle.col_constraints.iter().enumerate() {
+                        for (j , segments) in puzzle.col_constraints.iter().enumerate() {
                             if let Some(segment) = segments
                                 .get((segments.len() as isize - max_table_rows as isize + i as isize) as usize)
                             {
@@ -611,7 +655,7 @@ fn SolverColConstraints() -> Element {
                                     key: "col-{i}-{j}",
                                     class: "border select-none",
                                     style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; max-width: {use_data().block_size}px; height: {use_data().block_size}px; font-size: {use_data().block_size/2}px; color: {use_palette().text_color(segment.segment_color)}",
-                                    border_color: use_palette().text_color(segment.segment_color),
+                                    border_color: use_palette().border_color(segment.segment_color),
                                     "{segment.segment_length}"
                                 }
                             } else {
@@ -629,15 +673,10 @@ fn SolverColConstraints() -> Element {
 }
 
 #[component]
-fn SolverRowConstraints() -> Element {
-    let use_puzzle = use_context::<Signal<NonogramPuzzle>>();
-    let use_solution = use_context::<Signal<NonogramSolution>>();
+fn RowsConstraints(puzzle: NonogramPuzzle) -> Element {
     let use_palette = use_context::<Signal<NonogramPalette>>();
     let use_data = use_context::<Signal<NonogramData>>();
-
-    let current_puzzle = NonogramPuzzle::from_solution(&use_solution());
-    let diff_puzzle = current_puzzle.diff(&use_puzzle());
-    let max_table_cols = diff_puzzle
+    let max_table_cols = puzzle
         .row_constraints
         .iter()
         .map(|segments| segments.len())
@@ -649,7 +688,7 @@ fn SolverRowConstraints() -> Element {
             class: "max-w-min min-h-full pointer-events-none",
             draggable: false,
             tbody {
-                for (i , segments) in diff_puzzle.row_constraints.iter().enumerate() {
+                for (i , segments) in puzzle.row_constraints.iter().enumerate() {
                     tr {
                         for j in 0..max_table_cols {
                             if let Some(segment) = segments
@@ -659,98 +698,7 @@ fn SolverRowConstraints() -> Element {
                                     key: "row-{i}-{j}",
                                     class: "border select-none",
                                     style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; max-width: {use_data().block_size}px; height: {use_data().block_size}px; font-size: {use_data().block_size/2}px; color: {use_palette().text_color(segment.segment_color)}",
-                                    border_color: use_palette().text_color(segment.segment_color),
-                                    "{segment.segment_length}"
-                                }
-                            } else {
-                                td {
-                                    key: "row-{i}-{j}",
-                                    style: "min-width: {use_data().block_size}px; height: {use_data().block_size}px",
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-#[component]
-fn ColConstraints() -> Element {
-    let use_solution = use_context::<Signal<NonogramSolution>>();
-    let use_palette = use_context::<Signal<NonogramPalette>>();
-    let use_data = use_context::<Signal<NonogramData>>();
-
-    let col_constraints = use_solution().col_constraints();
-    let max_table_rows = col_constraints
-        .iter()
-        .map(|segments| segments.len())
-        .max()
-        .unwrap_or(0);
-
-    rsx! {
-        table {
-            id: "col-constaints-table",
-            class: "min-w-full min-h-full pointer-events-none",
-            draggable: false,
-            tbody {
-                for i in 0..max_table_rows {
-                    tr {
-                        for (j , segments) in col_constraints.iter().enumerate() {
-                            if let Some(segment) = segments
-                                .get((segments.len() as isize - max_table_rows as isize + i as isize) as usize)
-                            {
-                                td {
-                                    key: "col-{i}-{j}",
-                                    class: "border select-none",
-                                    style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; height: {use_data().block_size}px; font-size: {use_data().block_size/2}px; color: {use_palette().text_color(segment.segment_color)}",
-                                    border_color: use_palette().text_color(segment.segment_color),
-                                    "{segment.segment_length}"
-                                }
-                            } else {
-                                td {
-                                    key: "col-{i}-{j}",
-                                    style: "min-width: {use_data().block_size}px; height: {use_data().block_size}px",
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-#[component]
-fn RowConstraints() -> Element {
-    let use_solution = use_context::<Signal<NonogramSolution>>();
-    let use_palette = use_context::<Signal<NonogramPalette>>();
-    let use_data = use_context::<Signal<NonogramData>>();
-
-    let row_constraints = use_solution().row_constraints();
-    let max_table_cols = row_constraints
-        .iter()
-        .map(|segments| segments.len())
-        .max()
-        .unwrap_or(0);
-
-    rsx! {
-        table {
-            class: "max-w-min min-h-full pointer-events-none",
-            draggable: false,
-            tbody {
-                for (i , segments) in row_constraints.iter().enumerate() {
-                    tr {
-                        for j in 0..max_table_cols {
-                            if let Some(segment) = segments
-                                .get((segments.len() as isize - max_table_cols as isize + j as isize) as usize)
-                            {
-                                td {
-                                    key: "row-{i}-{j}",
-                                    class: "border select-none",
-                                    style: "background-color: {use_palette().color_palette[segment.segment_color]}; min-width: {use_data().block_size}px; max-width: {use_data().block_size}px; height: {use_data().block_size}px; color: {use_palette().text_color(segment.segment_color)}",
-                                    border_color: use_palette().text_color(segment.segment_color),
+                                    border_color: use_palette().border_color(segment.segment_color),
                                     "{segment.segment_length}"
                                 }
                             } else {
@@ -777,8 +725,9 @@ fn Solution() -> Element {
 
     rsx! {
         table {
-            class: "min-w-full min-h-full border",
+            class: "min-w-full min-h-full border-4",
             border_width: "3px",
+            border_color: "#9ca3af",
             draggable: false,
             tbody {
                 for (i , row_data) in solution_grid.iter().enumerate() {
@@ -787,12 +736,12 @@ fn Solution() -> Element {
                             // TODO!: FIX mouse over for mobile
                             td {
                                 key: "cell-{i}-{j}",
+                                class: "border select-none cursor-pointer border-gray-400",
                                 style: "background-color: {use_palette().color_palette[*cell]}; min-width: {use_data().block_size}px; height: {use_data().block_size}px;",
                                 border_color: if use_solution().in_line(use_data().start, use_data().end, (i, j))
-    || current_hover() == Some((i, j)) { String::from("red") } else if use_palette().color_palette[*cell] == "#ffffff" { String::from("black") } else { String::from("white") },
+    || current_hover() == Some((i, j)) { String::from("red") } else { use_palette().border_color(*cell) },
                                 border_width: if use_solution().in_line(use_data().start, use_data().end, (i, j))
     || current_hover() == Some((i, j)) { "3px" } else { "1px" },
-                                class: "border select-none cursor-pointer",
                                 onmousedown: move |event| {
                                     if event.modifiers().shift() || event.modifiers().ctrl() {
                                         let color = use_palette().brush;

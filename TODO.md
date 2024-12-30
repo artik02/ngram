@@ -3,7 +3,8 @@
 ## Fixes
 
 - [X] Fix nonogram editor styles on all platforms
-- [ ] Fix nonogram constraints text color on web when resizing
+- [X] Fix nonogram constraints text color on web when resizing
+- [X] Fix nonogram borders color on web when resizing
 - [ ] Fix width of the nonogram loading on mobile
 - [X] Fix white or bright rgb colors borders to black
 - [ ] Fix wonkiness on the editor when updating rows or columns contraints
@@ -22,8 +23,8 @@
     + [X] Add nonogram single block edition
     + [X] Add nonogram multiple block edition
     + [X] Add nonogram save button
-    + [ ] Add nonogram cleanup button
-    + [ ] Add nonogram slide buttons
+    + [X] Add nonogram cleanup button
+    + [X] Add nonogram slide buttons
     + [ ] Add nonogram brush size option
         * [ ] Rewrite drawing logic
     + [ ] Add nonogram loading (rewrite file handling)
@@ -32,7 +33,7 @@
         * [X] Reintegrate color palette
         * [X] Reintegrate nonogram visualization
         * [X] Show read-only cols and rows on solver
-        * [ ] Add an absolut coordinate label
+        * [ ] Add an absolute coordinate label
     + [X] Integrate nonogram loading
     + [X] Integrate reactive constraints on solver
     + [ ] Nonogram evaluation function
@@ -42,15 +43,17 @@
     + [ ] Make the code parallel
     + [ ] Clear off dust of the design
 - [ ] Hideable nav bar
+- [ ] Allow users to save the files where they want
+- [ ] Show users extra segments (rewrite nonogram representation with isize)
 
 ## Chores
 
 - [ ] Update releases to use bundles
     + [ ] Update readme installation section
 - [ ] Add an icon for the application
-- [ ] Make nonogram components even more composable (remove repetition)
+- [X] Make nonogram components even more composable (remove repetition)
 - [ ] Change nonogram puzzle example
-- [ ] Update initial block_size for mobile
+- [X] Update initial block_size for mobile
 - [X] Rework nonoram editor state with global context
 - [ ] Move nonogram components in it's own modules
     + [X] Rework toolbar component
