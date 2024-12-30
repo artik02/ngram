@@ -3,7 +3,7 @@
 ## Fixes
 
 - [X] Fix nonogram editor styles on all platforms
-- [ ] Fix nonogram constraints text color on web
+- [ ] Fix nonogram constraints text color on web when resizing
 - [ ] Fix width of the nonogram loading on mobile
 - [X] Fix white or bright rgb colors borders to black
 - [ ] Fix wonkiness on the editor when updating rows or columns contraints
