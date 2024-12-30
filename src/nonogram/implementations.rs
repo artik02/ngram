@@ -141,7 +141,8 @@ impl NonogramSolution {
     }
 
     pub fn col_constraints(&self) -> Vec<Vec<NonogramSegment>> {
-        let mut col_constraints = Vec::with_capacity(self.cols());
+        println!("Solution: {:?}", self.solution_grid);
+        let mut col_constraints = Vec::with_capacity(self.rows());
         for col_idx in 0..self.cols() {
             let mut col_segments = Vec::new();
             let mut previous_segment_color = 0;

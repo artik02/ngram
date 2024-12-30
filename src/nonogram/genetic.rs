@@ -49,6 +49,10 @@ impl NonogramSolution {
                     let mut segment = vec![segment.segment_color; segment.segment_length];
                     row_chromosome.append(&mut segment);
                 }
+                if remaining_spaces != 0 {
+                    let mut gap_segment = vec![BACKGROUND; remaining_spaces];
+                    row_chromosome.append(&mut gap_segment);
+                }
                 row_chromosome
             })
             .collect();
@@ -303,5 +307,69 @@ mod tests {
         let result = NonogramPuzzle::get_slidables(&row_segment_colors);
         // Both outer segments can slide once, the other can slide in both directions
         assert_slidable_positions_equal(result, vec![(0, 1), (1, 2), (2, 3), (3, 4)]);
+    }
+
+    #[test]
+    fn same_puzzle_after_mutation() {
+        let puzzle = crate::nonogram::puzzles::tree_nonogram_puzzle();
+        let mut rng = rand::SeedableRng::seed_from_u64(0);
+
+        // Create the initial candidate solution based on the puzzle
+        let mut candidate = NonogramSolution::new_chromosome_solution(&puzzle, &mut rng);
+        println!("Candidate: {:?}", candidate.solution_grid);
+
+        // Mutate the candidate solution
+        puzzle.chromosome_mutation(&mut candidate, 0.5, &mut rng);
+
+        // Convert the mutated candidate back into a puzzle
+        let mutated = NonogramPuzzle::from_solution(&candidate);
+
+        // Assert that the mutated puzzle has the same row_constraints as the original one
+        assert_eq!(puzzle.row_constraints, mutated.row_constraints);
+    }
+
+    #[test]
+    fn same_puzzle_after_cross() {
+        let puzzle = crate::nonogram::puzzles::tree_nonogram_puzzle();
+        let mut rng = rand::SeedableRng::seed_from_u64(0);
+
+        // Create two initial candidate solutions based on the puzzle
+        let ancestor_1 = NonogramSolution::new_chromosome_solution(&puzzle, &mut rng);
+        let ancestor_2 = NonogramSolution::new_chromosome_solution(&puzzle, &mut rng);
+
+        // Perform a uniform cross between the two ancestors
+        let (child_1, child_2) = puzzle.uniform_cross(&ancestor_1, &ancestor_2, &mut rng);
+
+        // Convert the children back into puzzles
+        let mutated_1 = NonogramPuzzle::from_solution(&child_1);
+        let mutated_2 = NonogramPuzzle::from_solution(&child_2);
+
+        // Assert that both children have the same row_constraints as the original puzzle
+        assert_eq!(puzzle.row_constraints, mutated_1.row_constraints);
+        assert_eq!(puzzle.row_constraints, mutated_2.row_constraints);
+    }
+
+    #[test]
+    fn same_puzzle_after_mutation_and_cross() {
+        let puzzle = crate::nonogram::puzzles::tree_nonogram_puzzle();
+        let mut rng = rand::SeedableRng::seed_from_u64(0);
+
+        // Create two initial candidate solutions based on the puzzle
+        let mut ancestor_1 = NonogramSolution::new_chromosome_solution(&puzzle, &mut rng);
+        let ancestor_2 = NonogramSolution::new_chromosome_solution(&puzzle, &mut rng);
+
+        // Mutate the first ancestor
+        puzzle.chromosome_mutation(&mut ancestor_1, 0.5, &mut rng);
+
+        // Perform a uniform cross between the mutated ancestor_1 and ancestor_2
+        let (child_1, child_2) = puzzle.uniform_cross(&ancestor_1, &ancestor_2, &mut rng);
+
+        // Convert the children back into puzzles
+        let mutated_1 = NonogramPuzzle::from_solution(&child_1);
+        let mutated_2 = NonogramPuzzle::from_solution(&child_2);
+
+        // Assert that both children have the same row_constraints as the original puzzle
+        assert_eq!(puzzle.row_constraints, mutated_1.row_constraints);
+        assert_eq!(puzzle.row_constraints, mutated_2.row_constraints);
     }
 }
