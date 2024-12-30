@@ -32,7 +32,9 @@ use dioxus::{
     prelude::*,
 };
 use dioxus_elements::input_data::MouseButton;
-use dioxus_free_icons::icons::fa_solid_icons::FaPlus;
+use dioxus_free_icons::icons::fa_solid_icons::{
+    FaArrowDown, FaArrowLeft, FaArrowRight, FaArrowUp, FaDeleteLeft, FaPlus,
+};
 use dioxus_free_icons::Icon;
 use dioxus_i18n::t;
 use rand::Rng;
@@ -84,6 +86,10 @@ fn SolverToolbar() -> Element {
             }
             div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
                 FileLoadInput {}
+            }
+            div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
+                ClearSolutionButton {}
+                SlideSolutionButtons {}
             }
             div { class: "flex flex-wrap justify-items-center justify-center items-center gap-6",
                 ColorPalette { readonly: true }
@@ -158,6 +164,11 @@ fn EditorToolbar() -> Element {
             div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
                 FileSaveInput {}
             }
+            div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
+                ClearSolutionButton {}
+                SlideSolutionButtons {}
+                NewColorButton {}
+            }
             div { class: "flex flex-wrap justify-items-center justify-center items-center gap-6",
                 ColorPalette { readonly: false }
             }
@@ -191,10 +202,10 @@ fn EditorNonogram() -> Element {
 fn RowsInput(readonly: bool) -> Element {
     let mut use_solution = use_context::<Signal<NonogramSolution>>();
     rsx! {
-        div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
+        div { class: "flex flex-row justify-items-center justify-center items-center gap-3",
             label {
                 r#for: "rows-input",
-                class: "py-2 text-gray-200 font-semibold",
+                class: "py-2 text-gray-200 font-semibold select-none",
                 cursor: if !readonly { "pointer" },
                 color: if readonly { "darkgray" },
                 {t!("label_rows")}
@@ -202,7 +213,7 @@ fn RowsInput(readonly: bool) -> Element {
             }
             input {
                 id: "rows-input",
-                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
+                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 active:scale-125 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
                 cursor: if !readonly { "pointer" } else { "default" },
                 color: if readonly { "darkgray" },
                 readonly,
@@ -226,10 +237,10 @@ fn RowsInput(readonly: bool) -> Element {
 fn ColumnsInput(readonly: bool) -> Element {
     let mut use_solution = use_context::<Signal<NonogramSolution>>();
     rsx! {
-        div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
+        div { class: "flex flex-row justify-items-center justify-center items-center gap-3",
             label {
                 r#for: "cols-input",
-                class: "py-2 text-gray-200 font-semibold",
+                class: "py-2 text-gray-200 font-semibold cursor-pointer select-none",
                 cursor: if !readonly { "pointer" },
                 color: if readonly { "darkgray" },
                 {t!("label_columns")}
@@ -237,7 +248,7 @@ fn ColumnsInput(readonly: bool) -> Element {
             }
             input {
                 id: "cols-input",
-                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
+                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 active:scale-125 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
                 cursor: if !readonly { "pointer" } else { "default" },
                 color: if readonly { "darkgray" },
                 readonly,
@@ -261,16 +272,16 @@ fn ColumnsInput(readonly: bool) -> Element {
 fn BlockSizeInput() -> Element {
     let mut use_data = use_context::<Signal<NonogramData>>();
     rsx! {
-        div { class: "flex flex-row justify-items-center justify-center items-center gap-2",
+        div { class: "flex flex-row justify-items-center justify-center items-center gap-3",
             label {
                 r#for: "size-input",
-                class: "py-2 text-gray-200 font-semibold cursor-pointer",
+                class: "py-2 text-gray-200 font-semibold cursor-pointer select-none",
                 {t!("label_size")}
                 ":"
             }
             input {
                 id: "size-input",
-                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
+                class: "appearance-none px-4 py-1 w-20 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 active:scale-125 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
                 r#type: "number",
                 min: "10",
                 max: "100",
@@ -349,6 +360,116 @@ fn FileLoadInput() -> Element {
 }
 
 #[component]
+fn ClearSolutionButton() -> Element {
+    let mut use_solution = use_context::<Signal<NonogramSolution>>();
+    rsx! {
+        button {
+            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
+            onclick: move |_| {
+                use_solution.write().clear();
+                info!("Cleared the nonogram solution grid");
+            },
+            Icon {
+                class: "w-11/12 h-11/12",
+                fill: "rgb(156, 163, 175)",
+                icon: FaDeleteLeft,
+            }
+        }
+    }
+}
+
+#[component]
+fn SlideSolutionButtons() -> Element {
+    let mut use_solution = use_context::<Signal<NonogramSolution>>();
+    rsx! {
+        button {
+            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
+            onclick: move |_| {
+                use_solution.write().slide(-1, 0);
+                info!("Sliding the nonogram solution grid left");
+            },
+            Icon {
+                class: "w-11/12 h-11/12",
+                fill: "rgb(156, 163, 175)",
+                icon: FaArrowLeft,
+            }
+        }
+        button {
+            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
+            onclick: move |_| {
+                use_solution.write().slide(0, -1);
+                info!("Sliding the nonogram solution grid up");
+            },
+            Icon {
+                class: "w-11/12 h-11/12",
+                fill: "rgb(156, 163, 175)",
+                icon: FaArrowUp,
+            }
+        }
+        button {
+            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
+            onclick: move |_| {
+                use_solution.write().slide(0, 1);
+                info!("Sliding the nonogram solution grid down");
+            },
+            Icon {
+                class: "w-11/12 h-11/12",
+                fill: "rgb(156, 163, 175)",
+                icon: FaArrowDown,
+            }
+        }
+        button {
+            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
+            onclick: move |_| {
+                use_solution.write().slide(1, 0);
+                info!("Sliding the nonogram solution grid right");
+            },
+            Icon {
+                class: "w-11/12 h-11/12",
+                fill: "rgb(156, 163, 175)",
+                icon: FaArrowRight,
+            }
+        }
+    }
+}
+
+#[component]
+fn NewColorButton() -> Element {
+    let mut use_palette = use_context::<Signal<NonogramPalette>>();
+    rsx! {
+        button {
+            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
+            onclick: move |_| {
+                let palette_len = use_palette().len();
+                let getter = if palette_len < DEFAULT_PALETTE.len() {
+                    use_palette
+                        .write()
+                        .add_color(String::from(DEFAULT_PALETTE.get(palette_len)));
+                    "default"
+                } else {
+                    let mut rng = rand::thread_rng();
+                    let random_color = format!(
+                        "#{:02x}{:02x}{:02x}",
+                        rng.gen_range(0..256),
+                        rng.gen_range(0..256),
+                        rng.gen_range(0..256),
+                    );
+                    use_palette.write().add_color(random_color);
+                    "random"
+                };
+                use_palette.write().brush = palette_len;
+                info!("New {} palette color: {}", getter, use_palette().show_brush());
+            },
+            Icon {
+                class: "w-11/12 h-11/12",
+                fill: "rgb(156, 163, 175)",
+                icon: FaPlus,
+            }
+        }
+    }
+}
+
+#[component]
 fn ColorPalette(readonly: bool) -> Element {
     let mut use_palette = use_context::<Signal<NonogramPalette>>();
     rsx! {
@@ -356,7 +477,7 @@ fn ColorPalette(readonly: bool) -> Element {
             button {
                 key: "brush-{i}",
                 style: "background-color: {color}",
-                class: "w-10 h-10 rounded-full border border-gray-400 hover:bg-gray-600 transition-transform transform hover:scale-125",
+                class: "w-10 h-10 rounded-full border border-gray-400 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
                 onclick: move |event| {
                     if readonly || !(event.modifiers().ctrl() || event.modifiers().shift())
                         || use_palette().len() == 1
@@ -368,37 +489,6 @@ fn ColorPalette(readonly: bool) -> Element {
                     }
                     info!("Changed brush color: {}", use_palette().show_brush());
                 },
-            }
-        }
-        if !readonly {
-            button {
-                class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-gray-600 transition-transform transform hover:scale-125",
-                onclick: move |_| {
-                    let palette_len = use_palette().len();
-                    let getter = if palette_len < DEFAULT_PALETTE.len() {
-                        use_palette
-                            .write()
-                            .add_color(String::from(DEFAULT_PALETTE.get(palette_len)));
-                        "default"
-                    } else {
-                        let mut rng = rand::thread_rng();
-                        let random_color = format!(
-                            "#{:02x}{:02x}{:02x}",
-                            rng.gen_range(0..256),
-                            rng.gen_range(0..256),
-                            rng.gen_range(0..256),
-                        );
-                        use_palette.write().add_color(random_color);
-                        "random"
-                    };
-                    use_palette.write().brush = palette_len;
-                    info!("New {} palette color: {}", getter, use_palette().show_brush());
-                },
-                Icon {
-                    class: "w-full h-full",
-                    fill: "rgb(156, 163, 175)",
-                    icon: FaPlus,
-                }
             }
         }
     }
@@ -448,13 +538,13 @@ fn FileSaveInput() -> Element {
         div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-2",
             label {
                 r#for: "name-input",
-                class: " py-2 text-gray-200 font-semibold cursor-pointer",
+                class: " py-2 text-gray-200 font-semibold cursor-pointer select-none",
                 {t!("label_save_nonogram")}
                 ":"
             }
             input {
                 id: "name-input",
-                class: "appearance-none px-4 py-1 rounded border border-gray-500 bg-gray-800 text-white focus:ring focus:ring-blue-500 focus:outline-none",
+                class: "appearance-none px-4 py-1 rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 active:scale-105 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform",
                 r#type: "text",
                 placeholder: t!("label_save_nonogram"),
                 onchange: move |event| {
@@ -464,7 +554,7 @@ fn FileSaveInput() -> Element {
             }
         }
         button {
-            class: "px-4 py-1 font-bold rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800  focus:outline-none focus:ring focus:ring-blue-300",
+            class: "px-4 py-1 font-bold rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-105 active:scale-110 focus:outline-none focus:ring focus:ring-blue-300 transition-transform transform",
             onclick: save_nonogram_onclick,
             {t!("button_save_nonogram")}
         }
@@ -478,7 +568,7 @@ fn ColorInput() -> Element {
         div { class: "flex justify-end",
             input {
                 r#type: "color",
-                class: "appearance-none w-10 h-10 border outline-none transition-transform transform hover:scale-125 focus:ring focus:ring-blue-500 focus:outline-none cursor-pointer",
+                class: "appearance-none w-10 h-10 border outline-none hover:scale-125 active:scale-150 focus:ring focus:ring-blue-500 focus:outline-none transition-transform transform cursor-pointer",
                 value: "{use_palette().get_current()}",
                 onchange: move |event| {
                     use_palette.write().set_current(event.value());
@@ -682,11 +772,14 @@ fn Solution() -> Element {
     let mut use_solution = use_context::<Signal<NonogramSolution>>();
     let use_palette = use_context::<Signal<NonogramPalette>>();
     let mut use_data = use_context::<Signal<NonogramData>>();
-
     let solution_grid = use_solution().solution_grid.clone();
+    let mut current_hover = use_signal(|| None);
 
     rsx! {
-        table { class: "min-w-full min-h-full border-collapse", draggable: false,
+        table {
+            class: "min-w-full min-h-full border",
+            border_width: "3px",
+            draggable: false,
             tbody {
                 for (i , row_data) in solution_grid.iter().enumerate() {
                     tr {
@@ -694,10 +787,12 @@ fn Solution() -> Element {
                             // TODO!: FIX mouse over for mobile
                             td {
                                 key: "cell-{i}-{j}",
-                                class: "border select-none cursor-pointer",
                                 style: "background-color: {use_palette().color_palette[*cell]}; min-width: {use_data().block_size}px; height: {use_data().block_size}px;",
-                                border_color: if use_solution().in_line(use_data().start, use_data().end, (i, j)) { String::from("red") } else if use_palette().color_palette[*cell] == "#ffffff" { String::from("black") } else { String::from("white") },
-                                border_width: if use_solution().in_line(use_data().start, use_data().end, (i, j)) { "3px" } else { "1px" },
+                                border_color: if use_solution().in_line(use_data().start, use_data().end, (i, j))
+    || current_hover() == Some((i, j)) { String::from("red") } else if use_palette().color_palette[*cell] == "#ffffff" { String::from("black") } else { String::from("white") },
+                                border_width: if use_solution().in_line(use_data().start, use_data().end, (i, j))
+    || current_hover() == Some((i, j)) { "3px" } else { "1px" },
+                                class: "border select-none cursor-pointer",
                                 onmousedown: move |event| {
                                     if event.modifiers().shift() || event.modifiers().ctrl() {
                                         let color = use_palette().brush;
@@ -714,6 +809,7 @@ fn Solution() -> Element {
                                 },
                                 onmouseover: move |event| {
                                     if event.held_buttons().contains(MouseButton::Primary) {
+                                        *current_hover.write() = None;
                                         info!("Entered press on ({}, {})", i + 1, j + 1);
                                         if event.modifiers().shift() || event.modifiers().ctrl() {
                                             let color = use_palette().brush;
@@ -726,9 +822,13 @@ fn Solution() -> Element {
                                             use_data.write().end = Some((i, j));
                                         }
                                     } else {
+                                        *current_hover.write() = Some((i, j));
                                         use_data.write().start = None;
                                         use_data.write().end = None;
                                     }
+                                },
+                                onmouseleave: move |_| {
+                                    *current_hover.write() = None;
                                 },
                                 onmouseup: move |_| {
                                     if use_data().start.is_some() {
@@ -736,6 +836,7 @@ fn Solution() -> Element {
                                         let color = use_palette().brush;
                                         let start = use_data().start.unwrap();
                                         use_solution.write().draw_line(start, (i, j), color);
+                                        *current_hover.write() = None;
                                         use_data.write().start = None;
                                         use_data.write().end = None;
                                     }
