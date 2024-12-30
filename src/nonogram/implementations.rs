@@ -40,7 +40,7 @@ impl NonogramPuzzle {
         }
     }
 
-    fn diff_constraints(
+    fn _diff_constraints(
         current_constraints: &Vec<Vec<NonogramSegment>>,
         expected_constraints: &Vec<Vec<NonogramSegment>>,
     ) -> Vec<Vec<NonogramSegment>> {
@@ -88,11 +88,11 @@ impl NonogramPuzzle {
     }
 
     /// Computes the difference for row and column constraints.
-    pub fn diff(&self, expected: &Self) -> Self {
+    pub fn _diff(&self, expected: &Self) -> Self {
         let row_constraints =
-            Self::diff_constraints(&self.row_constraints, &expected.row_constraints);
+            Self::_diff_constraints(&self.row_constraints, &expected.row_constraints);
         let col_constraints =
-            Self::diff_constraints(&self.col_constraints, &expected.col_constraints);
+            Self::_diff_constraints(&self.col_constraints, &expected.col_constraints);
         Self {
             rows: self.rows,
             cols: self.cols,

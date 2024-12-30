@@ -110,10 +110,10 @@ fn SolverToolbar() -> Element {
 
 #[component]
 fn SolverNonogram() -> Element {
-    let use_solution = use_context::<Signal<NonogramSolution>>();
     let use_puzzle = use_context::<Signal<NonogramPuzzle>>();
-    let current_puzzle = NonogramPuzzle::from_solution(&use_solution());
-    let diff_puzzle = current_puzzle.diff(&use_puzzle());
+    //let use_solution = use_context::<Signal<NonogramSolution>>();
+    //let current_puzzle = NonogramPuzzle::from_solution(&use_solution());
+    //let diff_puzzle = current_puzzle.diff(&use_puzzle());
     rsx! {
         section { class: "mb-20",
             table { class: "border-separate border-spacing-4",
@@ -121,14 +121,14 @@ fn SolverNonogram() -> Element {
                     tr {
                         th { class: "align-bottom", ColorInput {} }
                         th { class: "align-bottom",
-                            ColumnsConstraints { puzzle: diff_puzzle.clone() }
+                            ColumnsConstraints { puzzle: use_puzzle() }
                         }
                     }
                 }
                 tbody {
                     tr {
                         th { class: "flex justify-end",
-                            RowsConstraints { puzzle: diff_puzzle }
+                            RowsConstraints { puzzle: use_puzzle() }
                         }
                         td { Solution {} }
                     }
@@ -518,6 +518,7 @@ fn FileLoadButton() -> Element {
                     Some(file) => match file_engine.read_file_to_string(file).await {
                         Some(json) => match serde_json::from_str::<NonogramFile>(&json) {
                             Ok(nonogram_file) => {
+                                use_solution.write().clear();
                                 *use_puzzle.write() = nonogram_file.puzzle;
                                 *use_palette.write() = nonogram_file.palette;
                                 use_data.write().filename = file.clone();
