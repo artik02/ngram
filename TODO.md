@@ -45,6 +45,8 @@
 - [ ] Hideable nav bar
 - [ ] Allow users to save the files where they want
 - [ ] Show users extra segments (rewrite nonogram representation with isize)
+- [ ] Support shortcuts (brush color 1..9, del, slide, load, etc)
+- [ ] Support more convoluted shortcuts (del brush color 1..9, slide several times, etc)
 
 ## Chores
 
