@@ -37,14 +37,14 @@ pub const LEAVES: usize = 1;
 pub const WOOD: usize = 2;
 define_palette!(
     DEFAULT_PALETTE,
-    "#87ceeb", // Sky Blue
-    "#228b22", // Green (Somewhat Dark, like foliage)
+    "#b7e1f9", // Sky Blue
+    "#2b711f", // Green (Somewhat Dark, like foliage)
     "#8b4513", // Brown (Somewhat Dark, like a tree)
     "#000000", // Black
     "#ffffff", // White
-    "#ffa500", // Orange (Somewhat Bright)
-    "#7cfc00", // Light Green (Like Grass)
-    "#deb887"  // Light Brown (Soft, like beige)
+    "#e65724", // Orange (Somewhat Bright)
+    "#ae7e40", // Light Brown (Soft, like beige)
+    "#879f31"  // Light Green (Like Grass)
 );
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, Debug)]
@@ -76,6 +76,5 @@ pub struct NonogramFile {
 pub struct NonogramData {
     pub filename: String,
     pub block_size: usize,
-    pub start: Option<(usize, usize)>,
-    pub end: Option<(usize, usize)>,
+    pub completed: bool,
 }

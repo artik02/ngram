@@ -29,6 +29,7 @@ label_save_nonogram = Name
 label_size = Size (px)
 button_save_nonogram = Save Nonogram
 button_load_nonogram = Load Nonogram
+completed = You win!
 
 # non-translatable
 lang_en_US = English of United States

@@ -36,7 +36,7 @@
         * [ ] Add an absolute coordinate label
     + [X] Integrate nonogram loading
     + [X] Integrate reactive constraints on solver
-    + [ ] Nonogram evaluation function
+    + [X] Nonogram evaluation function
     + [ ] Add evolutive search to solve nonograms
         * [ ] Develop evolutive algorithms
     + [ ] Apply the ANOVA method

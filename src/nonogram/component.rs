@@ -70,8 +70,7 @@ pub fn Solver() -> Element {
         Signal::new(NonogramData {
             filename: String::from("tree.ngram"),
             block_size: get_block_size(),
-            start: None,
-            end: None,
+            completed: false,
         })
     });
 
@@ -111,11 +110,18 @@ fn SolverToolbar() -> Element {
 #[component]
 fn SolverNonogram() -> Element {
     let use_puzzle = use_context::<Signal<NonogramPuzzle>>();
-    //let use_solution = use_context::<Signal<NonogramSolution>>();
-    //let current_puzzle = NonogramPuzzle::from_solution(&use_solution());
+    let use_solution = use_context::<Signal<NonogramSolution>>();
+    let mut use_data = use_context::<Signal<NonogramData>>();
+    use_effect(move || {
+        let current_puzzle = NonogramPuzzle::from_solution(&use_solution());
+        use_data.write().completed = use_puzzle() == current_puzzle;
+    });
     //let diff_puzzle = current_puzzle.diff(&use_puzzle());
     rsx! {
         section { class: "mb-20",
+            if use_data().completed {
+                h2 { class: "text-6xl font-bold my-10 text-center", {t!("completed")} }
+            }
             table { class: "border-separate border-spacing-4",
                 thead {
                     tr {
@@ -156,8 +162,7 @@ pub fn Editor() -> Element {
         Signal::new(NonogramData {
             filename: String::new(),
             block_size: get_block_size(),
-            start: None,
-            end: None,
+            completed: false,
         })
     });
 
@@ -329,8 +334,12 @@ fn ClearSolutionButton() -> Element {
     let mut use_solution = use_context::<Signal<NonogramSolution>>();
     rsx! {
         button {
-            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
-            onclick: move |event| {
+            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-red-800 hover:scale-125 active:scale-150 transition-transform transform",
+            ondoubleclick: move |_| {
+                use_solution.write().clear();
+                info!("Cleared the nonogram solution grid");
+            },
+            onmousedown: move |event| {
                 if event.modifiers().ctrl() || event.modifiers().shift() {
                     use_solution.write().clear();
                     info!("Cleared the nonogram solution grid");
@@ -348,53 +357,58 @@ fn ClearSolutionButton() -> Element {
 #[component]
 fn SlideSolutionButtons() -> Element {
     let mut use_solution = use_context::<Signal<NonogramSolution>>();
+    let use_data = use_context::<Signal<NonogramData>>();
     rsx! {
-        button {
-            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
-            onclick: move |_| {
-                use_solution.write().slide(-1, 0);
-                info!("Sliding the nonogram solution grid left");
-            },
-            Icon {
-                class: "w-11/12 h-11/12",
-                fill: "rgb(156, 163, 175)",
-                icon: FaArrowLeft,
+        div {
+            class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
+            pointer_events: if use_data().completed { "none" },
+            button {
+                class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
+                onclick: move |_| {
+                    use_solution.write().slide(-1, 0);
+                    info!("Sliding the nonogram solution grid left");
+                },
+                Icon {
+                    class: "w-11/12 h-11/12",
+                    fill: "rgb(156, 163, 175)",
+                    icon: FaArrowLeft,
+                }
             }
-        }
-        button {
-            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
-            onclick: move |_| {
-                use_solution.write().slide(0, -1);
-                info!("Sliding the nonogram solution grid up");
-            },
-            Icon {
-                class: "w-11/12 h-11/12",
-                fill: "rgb(156, 163, 175)",
-                icon: FaArrowUp,
+            button {
+                class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
+                onclick: move |_| {
+                    use_solution.write().slide(0, -1);
+                    info!("Sliding the nonogram solution grid up");
+                },
+                Icon {
+                    class: "w-11/12 h-11/12",
+                    fill: "rgb(156, 163, 175)",
+                    icon: FaArrowUp,
+                }
             }
-        }
-        button {
-            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
-            onclick: move |_| {
-                use_solution.write().slide(0, 1);
-                info!("Sliding the nonogram solution grid down");
-            },
-            Icon {
-                class: "w-11/12 h-11/12",
-                fill: "rgb(156, 163, 175)",
-                icon: FaArrowDown,
+            button {
+                class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
+                onclick: move |_| {
+                    use_solution.write().slide(0, 1);
+                    info!("Sliding the nonogram solution grid down");
+                },
+                Icon {
+                    class: "w-11/12 h-11/12",
+                    fill: "rgb(156, 163, 175)",
+                    icon: FaArrowDown,
+                }
             }
-        }
-        button {
-            class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
-            onclick: move |_| {
-                use_solution.write().slide(1, 0);
-                info!("Sliding the nonogram solution grid right");
-            },
-            Icon {
-                class: "w-11/12 h-11/12",
-                fill: "rgb(156, 163, 175)",
-                icon: FaArrowRight,
+            button {
+                class: "flex justify-center items-center w-10 h-10 rounded-full border border-gray-400 bg-gray-700 hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
+                onclick: move |_| {
+                    use_solution.write().slide(1, 0);
+                    info!("Sliding the nonogram solution grid right");
+                },
+                Icon {
+                    class: "w-11/12 h-11/12",
+                    fill: "rgb(156, 163, 175)",
+                    icon: FaArrowRight,
+                }
             }
         }
     }
@@ -522,6 +536,7 @@ fn FileLoadButton() -> Element {
                                 *use_puzzle.write() = nonogram_file.puzzle;
                                 *use_palette.write() = nonogram_file.palette;
                                 use_data.write().filename = file.clone();
+                                use_data.write().completed = false;
                                 use_solution.write().set_cols(use_puzzle().cols);
                                 use_solution.write().set_rows(use_puzzle().rows);
                                 info!("Nonogram loaded correctly!");
@@ -720,16 +735,18 @@ fn RowsConstraints(puzzle: NonogramPuzzle) -> Element {
 fn Solution() -> Element {
     let mut use_solution = use_context::<Signal<NonogramSolution>>();
     let use_palette = use_context::<Signal<NonogramPalette>>();
-    let mut use_data = use_context::<Signal<NonogramData>>();
+    let use_data = use_context::<Signal<NonogramData>>();
     let solution_grid = use_solution().solution_grid.clone();
+    let mut use_start = use_signal(|| None);
+    let mut use_end = use_signal(|| None);
     let mut current_hover = use_signal(|| None);
-
     rsx! {
         table {
             class: "min-w-full min-h-full border-4",
             border_width: "3px",
             border_color: "#9ca3af",
             draggable: false,
+            pointer_events: if use_data().completed { "none" },
             tbody {
                 for (i , row_data) in solution_grid.iter().enumerate() {
                     tr {
@@ -739,9 +756,9 @@ fn Solution() -> Element {
                                 key: "cell-{i}-{j}",
                                 class: "border select-none cursor-pointer border-gray-400",
                                 style: "background-color: {use_palette().color_palette[*cell]}; min-width: {use_data().block_size}px; height: {use_data().block_size}px;",
-                                border_color: if use_solution().in_line(use_data().start, use_data().end, (i, j))
+                                border_color: if use_solution().in_line(use_start(), use_end(), (i, j))
     || current_hover() == Some((i, j)) { String::from("red") } else { use_palette().border_color(*cell) },
-                                border_width: if use_solution().in_line(use_data().start, use_data().end, (i, j))
+                                border_width: if use_solution().in_line(use_start(), use_end(), (i, j))
     || current_hover() == Some((i, j)) { "3px" } else { "1px" },
                                 onmousedown: move |event| {
                                     if event.modifiers().shift() || event.modifiers().ctrl() {
@@ -753,8 +770,8 @@ fn Solution() -> Element {
                                         use_solution.write().solution_grid[i][j] = color;
                                     } else {
                                         info!("Init press on ({}, {})", i + 1, j + 1);
-                                        use_data.write().start = Some((i, j));
-                                        use_data.write().end = Some((i, j));
+                                        *use_start.write() = Some((i, j));
+                                        *use_end.write() = Some((i, j));
                                     }
                                 },
                                 onmouseover: move |event| {
@@ -768,27 +785,27 @@ fn Solution() -> Element {
                                                 .show_brush()
                                             );
                                             use_solution.write().solution_grid[i][j] = color;
-                                        } else if use_data().start.is_some() {
-                                            use_data.write().end = Some((i, j));
+                                        } else if use_start().is_some() {
+                                            *use_end.write() = Some((i, j));
                                         }
                                     } else {
                                         *current_hover.write() = Some((i, j));
-                                        use_data.write().start = None;
-                                        use_data.write().end = None;
+                                        *use_start.write() = None;
+                                        *use_end.write() = None;
                                     }
                                 },
                                 onmouseleave: move |_| {
                                     *current_hover.write() = None;
                                 },
                                 onmouseup: move |_| {
-                                    if use_data().start.is_some() {
+                                    if use_start().is_some() {
                                         info!("Exit press on ({}, {})", i + 1, j + 1);
                                         let color = use_palette().brush;
-                                        let start = use_data().start.unwrap();
+                                        let start = use_start().unwrap();
                                         use_solution.write().draw_line(start, (i, j), color);
                                         *current_hover.write() = None;
-                                        use_data.write().start = None;
-                                        use_data.write().end = None;
+                                        *use_start.write() = None;
+                                        *use_end.write() = None;
                                     }
                                 },
                             }
