@@ -32,6 +32,7 @@ const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 mod nonogram {
     pub mod component;
     pub mod definitions;
+    pub mod evolutive;
     pub mod genetic;
     pub mod implementations;
     pub mod macros;

@@ -38,7 +38,7 @@
     + [X] Integrate reactive constraints on solver
     + [X] Nonogram evaluation function
     + [ ] Add evolutive search to solve nonograms
-        * [ ] Develop evolutive algorithms
+        * [X] Develop evolutive algorithms
     + [ ] Apply the ANOVA method
     + [ ] Make the code parallel
     + [ ] Clear off dust of the design

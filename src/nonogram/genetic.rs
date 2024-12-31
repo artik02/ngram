@@ -157,6 +157,7 @@ impl NonogramPuzzle {
     ///
     /// - `ancestor_1`: A reference to the first parent solution (`NonogramSolution`).
     /// - `ancestor_2`: A reference to the second parent solution (`NonogramSolution`).
+    /// - `cross_probability`: The probability of a crossover between chromosomes happening.
     /// - `rng`: A mutable reference to a random number generator implementing `StdRng`.
     ///   This ensures reproducibility of the crossover operation when using the same seed.
     ///
@@ -168,7 +169,7 @@ impl NonogramPuzzle {
     /// # Method Details
     ///
     /// - For each row in the grid:
-    ///   - A random decision is made (50% probability) to take the row from either `ancestor_1` or `ancestor_2`.
+    ///   - A random decision is made (with `cross_probability`) to take the row from either `ancestor_1` or `ancestor_2`.
     ///   - The row from the chosen ancestor is added to the corresponding descendant.
     ///   - This ensures that each descendant is a unique combination of rows from the two ancestors.
     ///
@@ -183,13 +184,14 @@ impl NonogramPuzzle {
         &self,
         ancestor_1: &NonogramSolution,
         ancestor_2: &NonogramSolution,
+        cross_probability: f64,
         rng: &mut StdRng,
     ) -> (NonogramSolution, NonogramSolution) {
         let mut descendant_1 = Vec::with_capacity(self.rows);
         let mut descendant_2 = Vec::with_capacity(self.rows);
 
         for i in 0..self.rows {
-            if rng.gen_bool(0.5) {
+            if rng.gen_bool(cross_probability) {
                 descendant_1.push(
                     ancestor_1
                         .solution_grid
@@ -235,6 +237,7 @@ impl NonogramPuzzle {
     ///
     /// - `ancestor_1`: A reference to the first parent solution (`NonogramSolution`).
     /// - `ancestor_2`: A reference to the second parent solution (`NonogramSolution`).
+    /// - `cross_probability`: The probability of a crossover happening at all.
     /// - `rng`: A mutable reference to a random number generator implementing `StdRng`.
     ///   This ensures reproducibility of the crossover operation when using the same seed.
     ///
@@ -245,17 +248,20 @@ impl NonogramPuzzle {
     ///
     /// # Method Details
     ///
-    /// 1. **Determine Crossover Points**:
+    /// 1. **Determine Crossover Will Happen**:
+    ///    - A random decision is made (with `cross_probability`) to apply the crossover or simply return clones.
+    ///
+    /// 2. **Determine Crossover Points**:
     ///    - Two random crossover points, `point_1` and `point_2`, are selected within the range `[1, self.cols - 1)`.
     ///    - If `point_1` is greater than `point_2`, the values are swapped to ensure `point_1 < point_2`.
     ///
-    /// 2. **Row Inheritance**:
+    /// 3. **Row Inheritance**:
     ///    - For rows outside the range `[point_1, point_2]`:
     ///      - Rows are inherited directly from `ancestor_1` into `descendant_1` and from `ancestor_2` into `descendant_2`.
     ///    - For rows within the range `[point_1, point_2]`:
     ///      - Rows are swapped, with `ancestor_1` contributing to `descendant_2` and `ancestor_2` contributing to `descendant_1`.
     ///
-    /// 3. **Indexing Safety**:
+    /// 4. **Indexing Safety**:
     ///    - Rows are accessed using `.get(i)` to ensure safe access to the ancestor grids. If a row is missing in either
     ///      ancestor, the method panics with an error message indicating the missing row's index.
     ///
@@ -267,8 +273,13 @@ impl NonogramPuzzle {
         &self,
         ancestor_1: &NonogramSolution,
         ancestor_2: &NonogramSolution,
+        cross_probability: f64,
         rng: &mut StdRng,
     ) -> (NonogramSolution, NonogramSolution) {
+        if !rng.gen_bool(cross_probability) {
+            return (ancestor_1.clone(), ancestor_2.clone());
+        }
+
         let mut descendant_1 = Vec::with_capacity(self.rows);
         let mut descendant_2 = Vec::with_capacity(self.rows);
 
@@ -592,7 +603,7 @@ mod tests {
         let ancestor_2 = puzzle.new_chromosome_solution(&mut rng);
 
         // Perform a uniform cross between the two ancestors
-        let (child_1, child_2) = puzzle.uniform_cross(&ancestor_1, &ancestor_2, &mut rng);
+        let (child_1, child_2) = puzzle.uniform_cross(&ancestor_1, &ancestor_2, 0.5, &mut rng);
 
         // Convert the children back into puzzles
         let mutated_1 = NonogramPuzzle::from_solution(&child_1);
@@ -617,7 +628,7 @@ mod tests {
         puzzle.chromosome_mutation(&mut ancestor_1, 0.5, &mut rng);
 
         // Perform a uniform cross between the mutated ancestor_1 and ancestor_2
-        let (child_1, child_2) = puzzle.uniform_cross(&ancestor_1, &ancestor_2, &mut rng);
+        let (child_1, child_2) = puzzle.uniform_cross(&ancestor_1, &ancestor_2, 0.5, &mut rng);
 
         // Convert the children back into puzzles
         let mutated_1 = NonogramPuzzle::from_solution(&child_1);
