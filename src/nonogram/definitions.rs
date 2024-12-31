@@ -76,6 +76,5 @@ pub struct NonogramFile {
 pub struct NonogramData {
     pub filename: String,
     pub block_size: usize,
-    pub start: Option<(usize, usize)>,
-    pub end: Option<(usize, usize)>,
+    pub completed: bool,
 }
