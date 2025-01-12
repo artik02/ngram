@@ -23,14 +23,21 @@
 # en-US.ftl
 title_nonogram_solver = Nonogram Solver
 title_nonogram_editor = Nonogram Editor
+title_convergence_graph = Evolutive Search Convergence
 label_columns = Columns
 label_rows = Rows
 label_save_nonogram = Name
 label_size = Size (px)
 button_save_nonogram = Save Nonogram
+button_solve_nonogram = Solve Nonogram
 button_load_nonogram = Load Nonogram
 completed = You win!
+score = Score
+iterations = Iterations
+best = Best
+median = Median
+worst = Worst
 
 # non-translatable
-lang_en_US = English of United States
-lang_es_MX = Español de México
+lang_en_US = English (US)
+lang_es_MX = Español (MX)

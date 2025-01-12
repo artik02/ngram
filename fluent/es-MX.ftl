@@ -23,14 +23,21 @@
 # es-MX.ftl
 title_nonogram_solver =  Solucionador de Nonograma
 title_nonogram_editor = Editor de Nonograma
+title_convergence_graph = Convergencia de la Búsqueda Evolutiva
 label_columns = Columnas
 label_rows = Filas
 label_save_nonogram = Nombre
 label_size = Tamaño (px)
 button_save_nonogram = Guardar Nonograma
+button_solve_nonogram = Solucionar Nonograma
 button_load_nonogram = Cargar Nonograma
 completed = Has ganado!
+score = Puntaje
+iterations = Iteraciones
+best = Mejor
+median = Mediana
+worst = Peor
 
 # no traducible
-lang_en_US = English of United States
-lang_es_MX = Español de México
+lang_en_US = English (US)
+lang_es_MX = Español (MX)

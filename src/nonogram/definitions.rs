@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
 use crate::define_palette;
@@ -47,13 +49,13 @@ define_palette!(
     "#879f31"  // Light Green (Like Grass)
 );
 
-#[derive(Clone, Deserialize, Serialize, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct NonogramSegment {
     pub segment_color: usize,
     pub segment_length: usize,
 }
 
-#[derive(Clone, Deserialize, Serialize, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct NonogramPuzzle {
     pub rows: usize,
     pub cols: usize,
@@ -61,14 +63,28 @@ pub struct NonogramPuzzle {
     pub col_constraints: Vec<Vec<NonogramSegment>>,
 }
 
-#[derive(Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct NonogramSolution {
     pub solution_grid: Vec<Vec<usize>>,
 }
 
-#[derive(Deserialize, Serialize)]
+impl fmt::Display for NonogramSolution {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for row in &self.solution_grid {
+            let row_str = row
+                .iter()
+                .map(|num| num.to_string())
+                .collect::<Vec<_>>()
+                .join(" ");
+            writeln!(f, "{}", row_str)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
 pub struct NonogramFile {
-    pub puzzle: NonogramPuzzle,
+    pub solution: NonogramSolution,
     pub palette: NonogramPalette,
 }
 

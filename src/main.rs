@@ -29,7 +29,7 @@ use dioxus_i18n::{prelude::*, t};
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 
-mod nonogram {
+pub mod nonogram {
     pub mod component;
     pub mod definitions;
     pub mod evolutive;
@@ -38,7 +38,6 @@ mod nonogram {
     pub mod macros;
     pub mod puzzles;
 }
-
 use nonogram::component::{Editor, Solver};
 
 mod localization {
@@ -48,7 +47,6 @@ mod localization {
     pub const EN_US: LanguageIdentifier = langid!("en-US");
     pub const ES_MX: LanguageIdentifier = langid!("es-MX");
 }
-
 use localization::*;
 
 #[derive(Routable, Clone)]

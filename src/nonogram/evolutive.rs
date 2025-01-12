@@ -21,27 +21,59 @@
 // SOFTWARE.
 
 use super::definitions::{NonogramPuzzle, NonogramSolution};
-use rand::{rngs::StdRng, seq::SliceRandom, Rng};
+use dioxus::logger::tracing::info;
+use rand::{rngs::StdRng, seq::SliceRandom, Rng, SeedableRng};
+
+const POPULATION_SIZE: usize = 500;
+const CROSS_PROBABILITY: f64 = 0.9;
+const MUTATION_PROBABILITY: f64 = 0.1;
+const TOURNAMENT_SIZE: usize = 3;
+const MAX_ITERATIONS: usize = 300;
+const SLIDE_TRIES: usize = 5;
+
+pub fn solve_nonogram(puzzle: NonogramPuzzle) -> History {
+    let mut rng = StdRng::from_entropy();
+    let history = evolutive_search(
+        POPULATION_SIZE,
+        &puzzle,
+        CROSS_PROBABILITY,
+        MUTATION_PROBABILITY,
+        TOURNAMENT_SIZE,
+        SLIDE_TRIES,
+        MAX_ITERATIONS,
+        &mut rng,
+    );
+    match &history.winner {
+        Ok(winner) => info!("Nonogram Solution:\n{}", winner),
+        Err(approach) => info!(
+            "Best score: {}\nBest Solution:\n{}",
+            puzzle.score(approach),
+            approach
+        ),
+    }
+    history
+}
 
 type NewPopulation = Vec<NonogramSolution>;
 type Population = Vec<(NonogramSolution, usize)>;
 
+#[derive(Debug, Clone)]
 pub struct History {
     pub iterations: usize,
     pub best: Vec<usize>,
     pub median: Vec<f64>,
     pub worst: Vec<usize>,
-    pub winner: Option<NonogramSolution>,
+    pub winner: Result<NonogramSolution, NonogramSolution>,
 }
 
 impl History {
-    pub fn new() -> Self {
+    pub fn new(puzzle: &NonogramPuzzle, rng: &mut StdRng) -> Self {
         Self {
             iterations: 0,
             best: Vec::new(),
             median: Vec::new(),
             worst: Vec::new(),
-            winner: None,
+            winner: Err(puzzle.new_chromosome_solution(rng)),
         }
     }
 
@@ -67,25 +99,32 @@ impl History {
 
     pub fn winner(&mut self, population: &Population) -> bool {
         if population[0].1 == 0 {
-            self.winner = Some(population[0].0.clone());
+            self.winner = Ok(population[0].0.clone());
             return true;
         }
         false
     }
+
+    pub fn loser(&mut self, population: &Population) {
+        if self.winner.is_err() {
+            self.winner = Err(population[0].0.clone());
+        }
+    }
 }
 
-/// Applies an evolutive search to minimize the badness score of the solution to a nonogram
+/// Applies an evolutive search to minimize the score of the solution to a nonogram
 pub fn evolutive_search(
     population_size: usize,
     puzzle: &NonogramPuzzle,
     cross_probability: f64,
     mutation_probability: f64,
     tournament_size: usize,
+    slide_tries: usize,
     max_iterations: usize,
     rng: &mut StdRng,
 ) -> History {
     let mut population = initial_population(puzzle, population_size, rng);
-    let mut history = History::new();
+    let mut history = History::new(puzzle, rng);
     while history.iterations < max_iterations {
         // Save results
         history.push(&population);
@@ -97,11 +136,17 @@ pub fn evolutive_search(
         let mut offspring =
             recombinate_population(puzzle, &population, cross_probability, tournament_size, rng);
         // Mutation
-        mutate_population(puzzle, &mut offspring, mutation_probability, rng);
+        mutate_population(
+            puzzle,
+            &mut offspring,
+            mutation_probability,
+            slide_tries,
+            rng,
+        );
         // Select best
         population = preserve_elite_population(puzzle, population, offspring);
     }
-    history.push(&population);
+    history.loser(&population);
     history
 }
 
@@ -159,11 +204,12 @@ fn mutate_population(
     puzzle: &NonogramPuzzle,
     offspring: &mut NewPopulation,
     mutation_probability: f64,
+    slide_tries: usize,
     rng: &mut StdRng,
 ) {
-    offspring
-        .iter_mut()
-        .for_each(|descendant| puzzle.chromosome_mutation(descendant, mutation_probability, rng));
+    offspring.iter_mut().for_each(|descendant| {
+        puzzle.chromosome_mutation(descendant, mutation_probability, slide_tries, rng)
+    });
 }
 
 fn preserve_elite_population(

@@ -22,7 +22,7 @@
 
 use crate::nsol;
 
-use super::definitions::{NonogramPuzzle, NonogramSolution, BACKGROUND};
+use super::definitions::{NonogramPuzzle, NonogramSegment, NonogramSolution, BACKGROUND};
 use rand::{rngs::StdRng, seq::SliceRandom, Rng};
 use std::mem;
 
@@ -75,18 +75,31 @@ impl NonogramPuzzle {
                     .iter()
                     .map(|segment| segment.segment_length)
                     .sum::<usize>();
+                let required_spaces = row_segments
+                    .windows(2)
+                    .filter(|segments| segments[0].segment_color == segments[1].segment_color)
+                    .count();
                 let chromosome_length = self.cols;
-                let mut remaining_spaces = chromosome_length - row_segments_length;
+                let mut remaining_spaces =
+                    chromosome_length - row_segments_length - required_spaces;
                 let mut row_chromosome = Vec::with_capacity(chromosome_length);
-                for segment in row_segments.iter() {
-                    let gap_size = rng.gen_range(0..=remaining_spaces);
-                    remaining_spaces -= gap_size;
-                    if gap_size != 0 {
-                        let mut gap_segment = vec![BACKGROUND; gap_size];
-                        row_chromosome.append(&mut gap_segment);
+                for (i, segment) in row_segments.iter().enumerate() {
+                    if rng.gen_bool(0.5) {
+                        let gap_size = rng.gen_range(0..=remaining_spaces);
+                        remaining_spaces -= gap_size;
+                        if gap_size != 0 {
+                            let mut gap_segment = vec![BACKGROUND; gap_size];
+                            row_chromosome.append(&mut gap_segment);
+                        }
                     }
+                    let color = segment.segment_color;
                     let mut segment = vec![segment.segment_color; segment.segment_length];
                     row_chromosome.append(&mut segment);
+                    if let Some(next_segment) = row_segments.get(i + 1) {
+                        if next_segment.segment_color == color {
+                            row_chromosome.push(BACKGROUND);
+                        }
+                    }
                 }
                 if remaining_spaces != 0 {
                     let mut gap_segment = vec![BACKGROUND; remaining_spaces];
@@ -134,17 +147,56 @@ impl NonogramPuzzle {
             .iter()
             .zip(self.col_constraints.iter())
             .map(|(current_segments, expected_segments)| {
-                (current_segments
+                let max_len = current_segments.len().max(expected_segments.len());
+                let current = Self::normalize_vec(current_segments, max_len);
+                let expected = Self::normalize_vec(expected_segments, max_len);
+                current
                     .iter()
-                    .map(|segment| segment.segment_length)
-                    .sum::<usize>() as isize
-                    - expected_segments
-                        .iter()
-                        .map(|segment| segment.segment_length)
-                        .sum::<usize>() as isize)
-                    .abs() as usize
+                    .zip(expected.iter())
+                    .map(|(cur, exp)| {
+                        if cur.segment_color == exp.segment_color {
+                            (cur.segment_length as isize - exp.segment_length as isize).abs()
+                                as usize
+                        } else {
+                            cur.segment_length * 2 + exp.segment_length
+                        }
+                    })
+                    .sum::<usize>()
             })
             .sum::<usize>()
+    }
+
+    pub fn _score(&self, candidate: &NonogramSolution) -> usize {
+        candidate
+            .col_constraints()
+            .iter()
+            .zip(self.col_constraints.iter())
+            .map(|(current_segments, expected_segments)| {
+                let c: usize = current_segments
+                    .iter()
+                    .map(|segment| segment.segment_length)
+                    .sum();
+                let e: usize = expected_segments
+                    .iter()
+                    .map(|segment| segment.segment_length)
+                    .sum();
+                (c as isize - e as isize).abs() as usize
+            })
+            .sum::<usize>()
+    }
+
+    pub fn normalize_vec(vec: &Vec<NonogramSegment>, len: usize) -> Vec<NonogramSegment> {
+        let padding = len.saturating_sub(vec.len());
+        let mut normalized_vec = Vec::with_capacity(len);
+        normalized_vec.extend(vec![
+            NonogramSegment {
+                segment_color: 0,
+                segment_length: 0
+            };
+            padding
+        ]);
+        normalized_vec.extend(vec.iter().cloned());
+        normalized_vec
     }
 
     /// Creates two new solutions using a genetic approach, combining rows (chromosomes) from two ancestor solutions.
@@ -371,15 +423,18 @@ impl NonogramPuzzle {
         &self,
         candidate: &mut NonogramSolution,
         mutation_probability: f64,
+        slide_tries: usize,
         rng: &mut StdRng,
     ) {
         for row_segment_colors in candidate.solution_grid.iter_mut() {
-            if rng.gen_bool(mutation_probability) {
-                let slidable_segments = Self::get_slidables(row_segment_colors);
-                if let Some(&(a, b)) = slidable_segments.choose(rng) {
-                    row_segment_colors.swap(a, b);
+            (0..slide_tries).for_each(|_| {
+                if rng.gen_bool(mutation_probability) {
+                    let slidable_segments = Self::get_slidables(row_segment_colors);
+                    if let Some(&(a, b)) = slidable_segments.choose(rng) {
+                        row_segment_colors.swap(a, b);
+                    }
                 }
-            }
+            });
         }
     }
 
@@ -433,34 +488,48 @@ impl NonogramPuzzle {
         let mut segment_colors_iter = row_segment_colors.iter().enumerate();
 
         // We check atleast one element exist
-        if let Some((_, previous_segment_color)) = segment_colors_iter.next() {
-            let mut previous_segment_color = *previous_segment_color;
+        if let Some((_, previous_block_color)) = segment_colors_iter.next() {
+            let mut previous_block_color = *previous_block_color;
+            let mut previous_segment_color = None;
             let mut background_end = None;
 
             // We set a marker in the segment start if needed
-            let mut segment_start = if previous_segment_color != 0 {
+            let mut segment_start = if previous_block_color != 0 {
                 Some(0)
             } else {
                 None
             };
-            for (i, &current_segment_color) in segment_colors_iter {
-                match (previous_segment_color, current_segment_color) {
+            for (i, &current_block_color) in segment_colors_iter {
+                match (previous_block_color, current_block_color) {
                     // Set the background end and segment start
                     (BACKGROUND, b) if b != BACKGROUND => {
                         background_end = Some(i - 1);
                         segment_start = Some(i);
+                        if let Some(previous_color) = previous_segment_color {
+                            if previous_color == b {
+                                background_end = None;
+                            }
+                        }
                     }
                     // Push valid slides of the segment
                     (a, BACKGROUND) if a != BACKGROUND => {
+                        previous_segment_color = Some(a);
                         if let Some(end) = background_end {
                             slidable_segments.push((end, i - 1 /* segment_a_end */));
                             background_end = None;
                         }
 
-                        slidable_segments.push((
-                        segment_start.expect("Couldn't find the segment start, look into setting the segment start and update of it to find the error."),
-                        i /* background_start */
-                    ));
+                        if row_segment_colors.get(i + 1).is_none()
+                            || previous_segment_color.is_none()
+                            || previous_segment_color.unwrap()
+                                != *row_segment_colors.get(i + 1).unwrap()
+                        {
+                            slidable_segments.push((
+                                segment_start.expect("Couldn't find the segment start, look into setting the segment start and update of it to find the error."),
+                                i /* background_start */
+                                )
+                            );
+                        }
                         segment_start = None;
                     }
                     // Check the left slide and update the segment start
@@ -476,7 +545,7 @@ impl NonogramPuzzle {
                     (_, _) => {}
                 }
                 // Update the previous segment
-                previous_segment_color = current_segment_color;
+                previous_block_color = current_block_color;
             }
             // If the background marker it's set, the last segment can slide
             if let Some(end) = background_end {
@@ -489,7 +558,19 @@ impl NonogramPuzzle {
 
 #[cfg(test)]
 mod tests {
+    use rand::SeedableRng;
+
+    use crate::nonogram::puzzles::tree_nonogram_puzzle;
+
     use super::*;
+
+    #[test]
+    fn assert_row_constraints_mantain() {
+        let puzzle = tree_nonogram_puzzle();
+        let mut rng = StdRng::seed_from_u64(0);
+        let solution = puzzle.new_chromosome_solution(&mut rng);
+        assert_eq!(solution.row_constraints(), puzzle.row_constraints)
+    }
 
     // Helper function to compare slidables
     // This function compares the actual and expected slidable positions and checks that they are identical.
@@ -567,9 +648,18 @@ mod tests {
     // Expected result: Both end segments can slide once, while the inner segment can slide in both directions.
     #[test]
     fn get_slidables_from_end_segments() {
-        let row_segment_colors = vec![1, 0, 1, 0, 1];
+        let row_segment_colors = vec![1, 0, 2, 0, 1];
         let result = NonogramPuzzle::get_slidables(&row_segment_colors);
         assert_slidable_positions_equal(result, vec![(0, 1), (1, 2), (2, 3), (3, 4)]);
+    }
+
+    // Test with segments of the same color
+    // Expected result: Zero segments can slide, since they will fuse into a single segment otherwise
+    #[test]
+    fn get_slidables_from_same_color_segments() {
+        let row_segment_colors = vec![1, 0, 1, 0, 1];
+        let result = NonogramPuzzle::get_slidables(&row_segment_colors);
+        assert_slidable_positions_equal(result, vec![]);
     }
 
     // Test mutation of a candidate puzzle solution and ensure that the row_constraints remain intact after mutation.
@@ -583,7 +673,7 @@ mod tests {
         println!("Candidate: {:?}", candidate.solution_grid);
 
         // Mutate the candidate solution
-        puzzle.chromosome_mutation(&mut candidate, 0.5, &mut rng);
+        puzzle.chromosome_mutation(&mut candidate, 0.5, 5, &mut rng);
 
         // Convert the mutated candidate back into a puzzle
         let mutated = NonogramPuzzle::from_solution(&candidate);
@@ -625,7 +715,7 @@ mod tests {
         let ancestor_2 = puzzle.new_chromosome_solution(&mut rng);
 
         // Mutate the first ancestor
-        puzzle.chromosome_mutation(&mut ancestor_1, 0.5, &mut rng);
+        puzzle.chromosome_mutation(&mut ancestor_1, 0.5, 5, &mut rng);
 
         // Perform a uniform cross between the mutated ancestor_1 and ancestor_2
         let (child_1, child_2) = puzzle.uniform_cross(&ancestor_1, &ancestor_2, 0.5, &mut rng);

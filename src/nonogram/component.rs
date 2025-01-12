@@ -20,13 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use std::fs::File;
-use std::io::Write;
-
-use crate::nonogram::definitions::{NonogramData, NonogramPalette};
-use crate::nonogram::puzzles::*;
+use std::io::Cursor;
 
 use super::definitions::{NonogramFile, NonogramPuzzle, NonogramSolution, DEFAULT_PALETTE};
+use super::evolutive::History;
+use crate::nonogram::definitions::{NonogramData, NonogramPalette};
+use crate::nonogram::evolutive::solve_nonogram;
+use crate::nonogram::puzzles::*;
 use dioxus::{
     logger::tracing::{error, info},
     prelude::*,
@@ -37,16 +37,9 @@ use dioxus_free_icons::icons::fa_solid_icons::{
 };
 use dioxus_free_icons::Icon;
 use dioxus_i18n::t;
-use rand::Rng;
-
-#[cfg(any(target_os = "android", target_os = "ios"))]
-fn get_block_size() -> usize {
-    30
-}
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
-fn get_block_size() -> usize {
-    40
-}
+use image::codecs::png::PngEncoder;
+use image::ImageEncoder;
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 #[component]
 pub fn Solver() -> Element {
@@ -66,10 +59,23 @@ pub fn Solver() -> Element {
         Signal::new(tree_empty_nonogram_solution())
     });
     use_context_provider(|| {
+        info!("Initializing nonogram file for preview");
+        Signal::new(tree_nonogram_file())
+    });
+    use_context_provider(|| {
+        info!("Initializing nonogram score state");
+        Signal::new(tree_nonogram_puzzle().score(&tree_nonogram_file().solution))
+    });
+    use_context_provider(|| {
+        info!("Initializing nonogram history");
+        let mut rng = StdRng::from_entropy();
+        Signal::new(History::new(&tree_nonogram_puzzle(), &mut rng))
+    });
+    use_context_provider(|| {
         info!("Initializing nonogram editor state");
         Signal::new(NonogramData {
             filename: String::from("tree.ngram"),
-            block_size: get_block_size(),
+            block_size: 30,
             completed: false,
         })
     });
@@ -79,6 +85,7 @@ pub fn Solver() -> Element {
             h1 { class: "text-4xl font-bold my-10 text-center", {t!("title_nonogram_solver")} }
             SolverToolbar {}
             SolverNonogram {}
+            ConvergeGraphic {}
         }
     }
 }
@@ -93,14 +100,14 @@ fn SolverToolbar() -> Element {
                 BlockSizeInput {}
             }
             div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
-                FileLoadButton {}
-                FileInput { readonly: true }
+                FileLoadInput {}
+                SolveButton {}
             }
             div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
                 ClearSolutionButton {}
                 SlideSolutionButtons {}
             }
-            div { class: "flex flex-wrap justify-items-center justify-center items-center gap-6",
+            div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
                 ColorPalette { readonly: true }
             }
         }
@@ -116,7 +123,6 @@ fn SolverNonogram() -> Element {
         let current_puzzle = NonogramPuzzle::from_solution(&use_solution());
         use_data.write().completed = use_puzzle() == current_puzzle;
     });
-    //let diff_puzzle = current_puzzle.diff(&use_puzzle());
     rsx! {
         section { class: "mb-20",
             if use_data().completed {
@@ -124,8 +130,8 @@ fn SolverNonogram() -> Element {
             }
             table { class: "border-separate border-spacing-4",
                 thead {
-                    tr {
-                        th { class: "align-bottom", ColorInput {} }
+                    tr { class: "align-baseline",
+                        th { class: "h-full align-bottom flex justify-end", SolutionPreview {} }
                         th { class: "align-bottom",
                             ColumnsConstraints { puzzle: use_puzzle() }
                         }
@@ -157,11 +163,12 @@ pub fn Editor() -> Element {
         info!("Initializing empty nonogram solution");
         Signal::new(tree_empty_nonogram_solution())
     });
+    use_context_provider(|| Signal::new(0));
     use_context_provider(|| {
         info!("Initializing nonogram editor state");
         Signal::new(NonogramData {
             filename: String::new(),
-            block_size: get_block_size(),
+            block_size: 30,
             completed: false,
         })
     });
@@ -189,6 +196,9 @@ fn EditorToolbar() -> Element {
                 FileSaveButton {}
             }
             div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
+                FileLoadEditInput {}
+            }
+            div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
                 ClearSolutionButton {}
                 SlideSolutionButtons {}
                 NewColorButton {}
@@ -209,7 +219,7 @@ fn EditorNonogram() -> Element {
             table { class: "border-separate border-spacing-4",
                 thead {
                     tr {
-                        th { class: "align-bottom", ColorInput {} }
+                        th { class: "align-bottom flex justify-end", ColorInput {} }
                         th { class: "align-bottom",
                             ColumnsConstraints { puzzle: current_puzzle.clone() }
                         }
@@ -325,6 +335,42 @@ fn BlockSizeInput() -> Element {
                     }
                 },
             }
+        }
+    }
+}
+
+#[component]
+fn SolveButton() -> Element {
+    let use_puzzle = use_context::<Signal<NonogramPuzzle>>();
+    let mut use_history = use_context::<Signal<History>>();
+    let mut use_solution = use_context::<Signal<NonogramSolution>>();
+    let mut use_running = use_signal(|| false);
+    rsx! {
+        button {
+            class: "px-4 py-1 font-bold rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-110 active:scale-125 transition-transform transform",
+            onmousedown: move |_| {},
+            onclick: move |_| async move {
+                if use_running() {
+                    info!("Already solving nonogram!");
+                } else {
+                    *use_running.write() = true;
+                    info!("Solving nonogram...");
+                    let history = solve_nonogram(use_puzzle().clone());
+                    match &history.winner {
+                        Ok(winner) => {
+                            *use_solution.write() = winner.clone();
+                            info!("Nonogram solved!");
+                        }
+                        Err(loser) => {
+                            *use_solution.write() = loser.clone();
+                            info!("Nonogram not solved!");
+                        }
+                    }
+                    *use_history.write() = history;
+                    *use_running.write() = false;
+                }
+            },
+            {t!("button_solve_nonogram")}
         }
     }
 }
@@ -459,16 +505,17 @@ fn ColorPalette(readonly: bool) -> Element {
                 key: "brush-{i}",
                 style: "background-color: {color}",
                 class: "w-10 h-10 rounded-full hover:bg-blue-800 hover:scale-125 active:scale-150 transition-transform transform",
-                onclick: move |event| {
-                    if readonly || !(event.modifiers().ctrl() || event.modifiers().shift())
-                        || use_palette().len() == 1
-                    {
-                        use_palette.write().set_brush(i);
-                    } else {
+                onclick: move |_| {
+                    use_palette.write().set_brush(i);
+                    info!("Changed brush color to: {}", use_palette().show_brush());
+                },
+                ondoubleclick: move |_| {
+                    if use_palette().len() > 1 {
                         info!("Removing brush color: {} -> {}", i, use_palette().get(i));
                         use_palette.write().remove_color(i);
+                    } else {
+                        info!("Cannot remove last brush color: {}", use_palette().show_brush());
                     }
-                    info!("Changed brush color: {}", use_palette().show_brush());
                 },
             }
         }
@@ -518,12 +565,13 @@ fn FileInput(readonly: bool) -> Element {
 }
 
 #[component]
-fn FileLoadButton() -> Element {
+fn FileLoadInput() -> Element {
+    let mut use_file = use_context::<Signal<NonogramFile>>();
     let mut use_puzzle = use_context::<Signal<NonogramPuzzle>>();
     let mut use_solution = use_context::<Signal<NonogramSolution>>();
     let mut use_palette = use_context::<Signal<NonogramPalette>>();
     let mut use_data = use_context::<Signal<NonogramData>>();
-    let load_nonogram_onclick = move |event: FormEvent| async move {
+    let load_nonogram_onchange = move |event: FormEvent| async move {
         info!("Loading nonogram...");
         match &event.files() {
             Some(file_engine) => {
@@ -532,8 +580,10 @@ fn FileLoadButton() -> Element {
                     Some(file) => match file_engine.read_file_to_string(file).await {
                         Some(json) => match serde_json::from_str::<NonogramFile>(&json) {
                             Ok(nonogram_file) => {
+                                *use_file.write() = nonogram_file.clone();
                                 use_solution.write().clear();
-                                *use_puzzle.write() = nonogram_file.puzzle;
+                                *use_puzzle.write() =
+                                    NonogramPuzzle::from_solution(&nonogram_file.solution);
                                 *use_palette.write() = nonogram_file.palette;
                                 use_data.write().filename = file.clone();
                                 use_data.write().completed = false;
@@ -560,15 +610,65 @@ fn FileLoadButton() -> Element {
         }
     };
     rsx! {
-        button { class: "px-4 py-1 max-h-min font-bold rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-110 active:scale-125 transition-transform transform cursor-pointer",
+        input {
+            class: "appearance-none rounded border px-4 py-1 border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-110 active:scale-125 transition-transform transform cursor-pointer",
+            r#type: "file",
+            accept: ".ngram",
+            multiple: false,
+            onchange: load_nonogram_onchange,
             {t!("button_load_nonogram")}
-            input {
-                class: "absolute top-0 left-0 h-full w-full opacity-0 rounded border hover:scale-110 active:scale-125 transition-transform transform cursor-pointer",
-                r#type: "file",
-                accept: ".ngram",
-                multiple: false,
-                onchange: load_nonogram_onclick,
+        }
+    }
+}
+
+#[component]
+fn FileLoadEditInput() -> Element {
+    let mut use_solution = use_context::<Signal<NonogramSolution>>();
+    let mut use_palette = use_context::<Signal<NonogramPalette>>();
+    let mut use_data = use_context::<Signal<NonogramData>>();
+    let load_nonogram_onchange = move |event: FormEvent| async move {
+        info!("Loading nonogram...");
+        match &event.files() {
+            Some(file_engine) => {
+                let files = file_engine.files();
+                match files.get(0) {
+                    Some(file) => match file_engine.read_file_to_string(file).await {
+                        Some(json) => match serde_json::from_str::<NonogramFile>(&json) {
+                            Ok(nonogram_file) => {
+                                use_solution.write().set_cols(nonogram_file.solution.cols());
+                                use_solution.write().set_rows(nonogram_file.solution.rows());
+                                *use_solution.write() = nonogram_file.solution;
+                                *use_palette.write() = nonogram_file.palette;
+                                use_data.write().filename = file.clone();
+                                use_data.write().completed = false;
+                                info!("Nonogram loaded correctly!");
+                            }
+                            Err(err) => {
+                                error!("Couldn't deserialize file '{file}': {err}");
+                            }
+                        },
+                        None => {
+                            error!("Couldn't read file: '{file}'");
+                        }
+                    },
+                    None => {
+                        error!("File engine had no attached files");
+                    }
+                }
             }
+            None => {
+                error!("Event hadn't a file engine attached: {event:?}");
+            }
+        }
+    };
+    rsx! {
+        input {
+            class: "appearance-none rounded border px-4 py-1 border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-110 active:scale-125 transition-transform transform cursor-pointer",
+            r#type: "file",
+            accept: ".ngram",
+            multiple: false,
+            onchange: load_nonogram_onchange,
+            {t!("button_load_nonogram")}
         }
     }
 }
@@ -578,13 +678,12 @@ fn FileSaveButton() -> Element {
     let use_solution = use_context::<Signal<NonogramSolution>>();
     let use_palette = use_context::<Signal<NonogramPalette>>();
     let use_data = use_context::<Signal<NonogramData>>();
-    // TODO!: ADD support for web an mobile (file engines)
-    let save_nonogram_onclick = move |_| async move {
+
+    let save_nonogram_onclick = move |_| {
         info!("Saving nonogram...");
-        let puzzle = NonogramPuzzle::from_solution(&use_solution());
-        let mut palette = use_palette().clone();
-        palette.brush = 0;
-        let file = NonogramFile { puzzle, palette };
+        let solution = use_solution().clone();
+        let palette = use_palette().clone();
+        let file = NonogramFile { solution, palette };
 
         match serde_json::to_string(&file) {
             Ok(json) => {
@@ -597,32 +696,71 @@ fn FileSaveButton() -> Element {
                 } else {
                     ".ngram"
                 };
-                // TODO!: Allow users to save where they want (file engine)
-                let filename = format!("artifacts/{}{}", filename, extension);
-                match File::create(&filename) {
-                    Ok(mut file) => match file.write(json.as_bytes()) {
-                        Ok(_) => {
-                            info!("Nonogram '{}' saved successfully!", filename);
-                        }
-                        Err(err) => {
-                            error!("Failed to write to file '{}': {}", filename, err);
-                        }
-                    },
-                    Err(err) => {
-                        error!("Failed to create the file '{}': {}", filename, err);
-                    }
-                }
+                let filename = format!("{}{}", filename, extension);
+
+                // Create a data URI for the JSON file
+                let data_uri = format!(
+                    "data:application/json;charset=utf-8,{}",
+                    urlencoding::encode(&json)
+                );
+
+                // Create a temporary download link
+                let document = web_sys::window().unwrap().document().unwrap();
+                let a = document.create_element("a").unwrap();
+                a.set_attribute("href", &data_uri).unwrap();
+                a.set_attribute("download", &filename).unwrap();
+
+                // Trigger the download
+                let body = document.body().unwrap();
+                body.append_child(&a).unwrap();
+                let click_event = web_sys::MouseEvent::new("click").unwrap();
+                a.dispatch_event(&click_event).unwrap();
+                body.remove_child(&a).unwrap();
+
+                info!("Nonogram '{}' prepared for download!", filename);
             }
             Err(err) => {
                 error!("Failed to serialize the nonogram: {}", err);
             }
         }
     };
+
     rsx! {
         button {
             class: "px-4 py-1 font-bold rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-110 active:scale-125 transition-transform transform",
             onclick: save_nonogram_onclick,
             {t!("button_save_nonogram")}
+        }
+    }
+}
+
+#[component]
+fn SolutionPreview() -> Element {
+    let use_file = use_context::<Signal<NonogramFile>>();
+    let use_score = use_context::<Signal<usize>>();
+    let solution_grid = use_file().solution.solution_grid.clone();
+    rsx! {
+        div { class: "flex flex-row justify-center justify-items-center items-center",
+            label { class: "text-xl px-2",
+                {t!("score")}
+                ": {use_score()}"
+            }
+            table { class: "pointer-events-none", draggable: false,
+                tbody {
+                    for (i , row_data) in solution_grid.iter().enumerate() {
+                        tr {
+                            for (j , cell) in row_data.iter().enumerate() {
+                                td {
+                                    key: "cell-{i}-{j}",
+                                    class: "select-none",
+                                    style: "background-color: {use_file().palette.color_palette[*cell]}; width: 10px; height: 10px;",
+                                    border_color: use_file().palette.border_color(*cell),
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -733,6 +871,8 @@ fn RowsConstraints(puzzle: NonogramPuzzle) -> Element {
 
 #[component]
 fn Solution() -> Element {
+    let mut use_score = use_context::<Signal<usize>>();
+    let use_puzzle = use_context::<Signal<NonogramPuzzle>>();
     let mut use_solution = use_context::<Signal<NonogramSolution>>();
     let use_palette = use_context::<Signal<NonogramPalette>>();
     let use_data = use_context::<Signal<NonogramData>>();
@@ -740,6 +880,9 @@ fn Solution() -> Element {
     let mut use_start = use_signal(|| None);
     let mut use_end = use_signal(|| None);
     let mut current_hover = use_signal(|| None);
+    use_effect(move || {
+        *use_score.write() = use_puzzle().score(&use_solution());
+    });
     rsx! {
         table {
             class: "min-w-full min-h-full border-4",
@@ -813,6 +956,110 @@ fn Solution() -> Element {
                     }
                 }
             }
+        }
+    }
+}
+
+use base64::prelude::*;
+use plotters::prelude::*;
+const GRAPH_WIDTH: u32 = 600;
+const GRAPH_HEIGHT: u32 = 400;
+
+#[component]
+fn ConvergeGraphic() -> Element {
+    let use_history = use_context::<Signal<History>>();
+    let buf_size = (GRAPH_WIDTH * GRAPH_HEIGHT) as usize * 3;
+    let mut buf = vec![0u8; buf_size];
+    let root = BitMapBackend::with_buffer(buf.as_mut_slice(), (GRAPH_WIDTH, GRAPH_HEIGHT))
+        .into_drawing_area();
+
+    root.fill(&WHITE).unwrap();
+
+    let max_score = match use_history().worst.iter().max() {
+        Some(max) => *max,
+        None => {
+            info!("The graph it's empty");
+            return rsx! {};
+        }
+    };
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption(t!("title_convergence_graph"), ("sans-serif", 30))
+        .set_label_area_size(LabelAreaPosition::Left, 80)
+        .set_label_area_size(LabelAreaPosition::Bottom, 50)
+        .margin(20)
+        .margin_right(50)
+        .build_cartesian_2d(0..use_history().iterations, 0 as f64..max_score as f64)
+        .unwrap();
+
+    chart
+        .configure_mesh()
+        .x_label_style(("sans-serif", 20).into_font())
+        .y_label_style(("sans-serif", 20).into_font())
+        .x_desc(t!("iterations"))
+        .y_desc(t!("score"))
+        .draw()?;
+
+    info!("Best scores: {:?}", use_history().best);
+    info!("Median scores: {:?}", use_history().median);
+    info!("Worst scores: {:?}", use_history().worst);
+
+    chart
+        .draw_series(LineSeries::new(
+            use_history().best.iter().map(|&y| y as f64).enumerate(),
+            &GREEN,
+        ))
+        .unwrap()
+        .label(t!("best"))
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
+
+    chart
+        .draw_series(LineSeries::new(
+            use_history().median.iter().map(|&y| y as f64).enumerate(),
+            &BLUE,
+        ))
+        .unwrap()
+        .label(t!("median"))
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+
+    chart
+        .draw_series(LineSeries::new(
+            use_history().worst.iter().map(|&y| y as f64).enumerate(),
+            &RED,
+        ))
+        .unwrap()
+        .label(t!("worst"))
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+
+    chart
+        .configure_series_labels()
+        .background_style(RGBColor(178, 178, 178))
+        .label_font(("sans-serif", 20).into_font())
+        .border_style(&BLACK)
+        .position(SeriesLabelPosition::Coordinate(
+            GRAPH_WIDTH as i32 / 2,
+            GRAPH_HEIGHT as i32 / 6,
+        ))
+        .draw()?;
+
+    let mut data = vec![0; 0];
+    let cursor = Cursor::new(&mut data);
+    let encoder = PngEncoder::new(cursor);
+    let color = image::ColorType::Rgb8;
+
+    drop(chart);
+    drop(root);
+
+    match encoder.write_image(buf.as_slice(), GRAPH_WIDTH, GRAPH_HEIGHT, color.into()) {
+        Ok(_) => {
+            let buffer_base64 = BASE64_STANDARD.encode(data);
+            rsx! {
+                img { src: "data:image/png;base64,{buffer_base64}" }
+            }
+        }
+        Err(e) => {
+            info!("The PNG encoder should have written the image: {e}");
+            rsx! {}
         }
     }
 }
