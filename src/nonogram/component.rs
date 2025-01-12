@@ -25,7 +25,7 @@ use std::io::Cursor;
 use super::definitions::{NonogramFile, NonogramPuzzle, NonogramSolution, DEFAULT_PALETTE};
 use super::evolutive::History;
 use crate::nonogram::definitions::{NonogramData, NonogramPalette};
-use crate::nonogram::evolutive::solve_nonogram;
+use crate::nonogram::evolutive::{anova, solve_nonogram};
 use crate::nonogram::puzzles::*;
 use dioxus::{
     logger::tracing::{error, info},
@@ -102,6 +102,7 @@ fn SolverToolbar() -> Element {
             div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
                 FileLoadInput {}
                 SolveButton {}
+                AnovaButton {}
             }
             div { class: "flex flex-row flex-wrap justify-items-center justify-center items-center gap-6",
                 ClearSolutionButton {}
@@ -371,6 +372,30 @@ fn SolveButton() -> Element {
                 }
             },
             {t!("button_solve_nonogram")}
+        }
+    }
+}
+
+#[component]
+fn AnovaButton() -> Element {
+    let use_puzzle = use_context::<Signal<NonogramPuzzle>>();
+    let mut use_running = use_signal(|| false);
+    rsx! {
+        button {
+            class: "px-4 py-1 font-bold rounded border border-gray-500 bg-gray-800 text-white hover:bg-blue-800 hover:scale-110 active:scale-125 transition-transform transform",
+            onmousedown: move |_| {},
+            onclick: move |_| async move {
+                if use_running() {
+                    info!("Already testing ANOVA!");
+                } else {
+                    *use_running.write() = true;
+                    info!("Testing ANOVA...");
+                    anova(use_puzzle().clone());
+                    info!("Finished testing ANOVA!");
+                    *use_running.write() = false;
+                }
+            },
+            {t!("button_anova")}
         }
     }
 }

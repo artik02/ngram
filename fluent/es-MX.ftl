@@ -31,6 +31,7 @@ label_size = Tamaño (px)
 button_save_nonogram = Guardar Nonograma
 button_solve_nonogram = Solucionar Nonograma
 button_load_nonogram = Cargar Nonograma
+button_anova = Probar ANOVA
 completed = Has ganado!
 score = Puntaje
 iterations = Iteraciones

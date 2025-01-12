@@ -31,6 +31,68 @@ const TOURNAMENT_SIZE: usize = 3;
 const MAX_ITERATIONS: usize = 300;
 const SLIDE_TRIES: usize = 5;
 
+pub fn anova(puzzle: NonogramPuzzle) {
+    let cross_probabilities = vec![0.3, 0.6, 0.9];
+    let mutation_probabilities = vec![0.1, 0.2, 0.3];
+    let slides = vec![3, 5, 7];
+
+    let mut best_score = usize::MAX;
+    let mut best_parameters = None;
+
+    for &cross_probability in &cross_probabilities {
+        for &mutation_probability in &mutation_probabilities {
+            for &slide_tries in &slides {
+                let mut rng = StdRng::from_entropy();
+                info!(
+                    "Testing parameters: {:?}...",
+                    Some((
+                        300,
+                        cross_probability,
+                        mutation_probability,
+                        3,
+                        slide_tries,
+                        200,
+                    ))
+                );
+
+                let history = evolutive_search(
+                    300,
+                    &puzzle,
+                    cross_probability,
+                    mutation_probability,
+                    3,
+                    slide_tries,
+                    200,
+                    &mut rng,
+                );
+
+                if let Some(&current_best) = history.best.last() {
+                    if current_best < best_score {
+                        best_score = current_best;
+                        best_parameters = Some((
+                            300,
+                            cross_probability,
+                            mutation_probability,
+                            3,
+                            slide_tries,
+                            200,
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    if let Some(parameters) = best_parameters {
+        info!(
+            "The best score was {} with the parameters: {:?}",
+            best_score, parameters
+        );
+    } else {
+        info!("A valid combination wasn't found");
+    }
+}
+
 pub fn solve_nonogram(puzzle: NonogramPuzzle) -> History {
     let mut rng = StdRng::from_entropy();
     let history = evolutive_search(
