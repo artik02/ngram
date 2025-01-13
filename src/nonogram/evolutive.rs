@@ -25,16 +25,17 @@ use dioxus::logger::tracing::info;
 use rand::{rngs::StdRng, seq::SliceRandom, Rng, SeedableRng};
 
 const POPULATION_SIZE: usize = 500;
-const CROSS_PROBABILITY: f64 = 0.9;
+const CROSS_PROBABILITY: f64 = 0.6;
 const MUTATION_PROBABILITY: f64 = 0.1;
 const TOURNAMENT_SIZE: usize = 3;
 const MAX_ITERATIONS: usize = 300;
-const SLIDE_TRIES: usize = 5;
+const SLIDE_TRIES: usize = 3;
 
 pub fn anova(puzzle: NonogramPuzzle) {
     let cross_probabilities = vec![0.3, 0.6, 0.9];
     let mutation_probabilities = vec![0.1, 0.2, 0.3];
     let slides = vec![3, 5, 7];
+    let seeds = vec![11, 13, 17, 19, 23, 29, 31, 37, 41, 43];
 
     let mut best_score = usize::MAX;
     let mut best_parameters = None;
@@ -42,41 +43,37 @@ pub fn anova(puzzle: NonogramPuzzle) {
     for &cross_probability in &cross_probabilities {
         for &mutation_probability in &mutation_probabilities {
             for &slide_tries in &slides {
-                let mut rng = StdRng::from_entropy();
-                info!(
-                    "Testing parameters: {:?}...",
-                    Some((
-                        300,
+                for &seed in &seeds {
+                    let mut rng = StdRng::seed_from_u64(seed);
+                    info!(
+                    "Testing parameters: cross_prob = {}, mut_prob = {}, slide_tries = {}, seed = {}...",
+                    cross_probability, mutation_probability, slide_tries, seed
+                );
+
+                    let history = evolutive_search(
+                        100,
+                        &puzzle,
                         cross_probability,
                         mutation_probability,
                         3,
                         slide_tries,
-                        200,
-                    ))
-                );
+                        100,
+                        &mut rng,
+                    );
 
-                let history = evolutive_search(
-                    300,
-                    &puzzle,
-                    cross_probability,
-                    mutation_probability,
-                    3,
-                    slide_tries,
-                    200,
-                    &mut rng,
-                );
-
-                if let Some(&current_best) = history.best.last() {
-                    if current_best < best_score {
-                        best_score = current_best;
-                        best_parameters = Some((
-                            300,
-                            cross_probability,
-                            mutation_probability,
-                            3,
-                            slide_tries,
-                            200,
-                        ));
+                    if let Some(&current_best) = history.best.last() {
+                        if current_best < best_score {
+                            best_score = current_best;
+                            best_parameters = Some((
+                                100,
+                                cross_probability,
+                                mutation_probability,
+                                3,
+                                slide_tries,
+                                100,
+                                seed,
+                            ));
+                        }
                     }
                 }
             }
@@ -94,7 +91,7 @@ pub fn anova(puzzle: NonogramPuzzle) {
 }
 
 pub fn solve_nonogram(puzzle: NonogramPuzzle) -> History {
-    let mut rng = StdRng::from_entropy();
+    let mut rng = StdRng::seed_from_u64(43);
     let history = evolutive_search(
         POPULATION_SIZE,
         &puzzle,
