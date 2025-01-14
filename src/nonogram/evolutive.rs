@@ -46,9 +46,9 @@ pub fn anova(puzzle: NonogramPuzzle) {
                 for &seed in &seeds {
                     let mut rng = StdRng::seed_from_u64(seed);
                     info!(
-                    "Testing parameters: cross_prob = {}, mut_prob = {}, slide_tries = {}, seed = {}...",
-                    cross_probability, mutation_probability, slide_tries, seed
-                );
+                        "Testing parameters: cross_prob = {}, mut_prob = {}, slide_tries = {}, seed = {}...",
+                        cross_probability, mutation_probability, slide_tries, seed
+                    );
 
                     let history = evolutive_search(
                         100,
@@ -60,6 +60,8 @@ pub fn anova(puzzle: NonogramPuzzle) {
                         100,
                         &mut rng,
                     );
+
+                    info!("Obtained a score of: {}", history.best.last().unwrap());
 
                     if let Some(&current_best) = history.best.last() {
                         if current_best < best_score {
