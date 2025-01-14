@@ -20,8 +20,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use std::io::Cursor;
-
 use super::definitions::{NonogramFile, NonogramPuzzle, NonogramSolution, DEFAULT_PALETTE};
 use super::evolutive::History;
 use crate::nonogram::definitions::{NonogramData, NonogramPalette};
@@ -37,8 +35,6 @@ use dioxus_free_icons::icons::fa_solid_icons::{
 };
 use dioxus_free_icons::Icon;
 use dioxus_i18n::t;
-use image::codecs::png::PngEncoder;
-use image::ImageEncoder;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 #[component]
@@ -164,7 +160,8 @@ pub fn Editor() -> Element {
         info!("Initializing empty nonogram solution");
         Signal::new(tree_empty_nonogram_solution())
     });
-    use_context_provider(|| Signal::new(0));
+    use_context_provider(|| Signal::new(0usize));
+    use_context_provider(|| Signal::new(tree_nonogram_puzzle()));
     use_context_provider(|| {
         info!("Initializing nonogram editor state");
         Signal::new(NonogramData {
@@ -985,19 +982,28 @@ fn Solution() -> Element {
     }
 }
 
-use base64::prelude::*;
-use plotters::prelude::*;
-const GRAPH_WIDTH: u32 = 600;
-const GRAPH_HEIGHT: u32 = 400;
-
+#[cfg(any(target_os = "android", feature = "web"))]
 #[component]
 fn ConvergeGraphic() -> Element {
+    rsx! {}
+}
+
+#[cfg(not(any(target_os = "android", feature = "web")))]
+#[component]
+fn ConvergeGraphic() -> Element {
+    use base64::prelude::*;
+    use image::codecs::png::PngEncoder;
+    use image::ImageEncoder;
+    use plotters::prelude::*;
+    use std::io::Cursor;
+    const GRAPH_WIDTH: u32 = 600;
+    const GRAPH_HEIGHT: u32 = 400;
     let use_history = use_context::<Signal<History>>();
     let buf_size = (GRAPH_WIDTH * GRAPH_HEIGHT) as usize * 3;
     let mut buf = vec![0u8; buf_size];
+    let bufr = buf.clone();
     let root = BitMapBackend::with_buffer(buf.as_mut_slice(), (GRAPH_WIDTH, GRAPH_HEIGHT))
         .into_drawing_area();
-
     root.fill(&WHITE).unwrap();
 
     let max_score = match use_history().worst.iter().max() {
@@ -1008,83 +1014,81 @@ fn ConvergeGraphic() -> Element {
         }
     };
 
-    let mut chart = ChartBuilder::on(&root)
+    if let Ok(mut chart) = ChartBuilder::on(&root)
         .caption(t!("title_convergence_graph"), ("sans-serif", 30))
         .set_label_area_size(LabelAreaPosition::Left, 80)
         .set_label_area_size(LabelAreaPosition::Bottom, 50)
         .margin(20)
         .margin_right(50)
         .build_cartesian_2d(0..use_history().iterations, 0 as f64..max_score as f64)
-        .unwrap();
+    {
+        chart
+            .configure_mesh()
+            .x_label_style(("sans-serif", 20).into_font())
+            .y_label_style(("sans-serif", 20).into_font())
+            .x_desc(t!("iterations"))
+            .y_desc(t!("score"))
+            .draw()?;
 
-    chart
-        .configure_mesh()
-        .x_label_style(("sans-serif", 20).into_font())
-        .y_label_style(("sans-serif", 20).into_font())
-        .x_desc(t!("iterations"))
-        .y_desc(t!("score"))
-        .draw()?;
+        info!("Best scores: {:?}", use_history().best);
+        info!("Median scores: {:?}", use_history().median);
+        info!("Worst scores: {:?}", use_history().worst);
 
-    info!("Best scores: {:?}", use_history().best);
-    info!("Median scores: {:?}", use_history().median);
-    info!("Worst scores: {:?}", use_history().worst);
+        chart
+            .draw_series(LineSeries::new(
+                use_history().best.iter().map(|&y| y as f64).enumerate(),
+                &GREEN,
+            ))
+            .unwrap()
+            .label(t!("best"))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
 
-    chart
-        .draw_series(LineSeries::new(
-            use_history().best.iter().map(|&y| y as f64).enumerate(),
-            &GREEN,
-        ))
-        .unwrap()
-        .label(t!("best"))
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
+        chart
+            .draw_series(LineSeries::new(
+                use_history().median.iter().map(|&y| y as f64).enumerate(),
+                &BLUE,
+            ))
+            .unwrap()
+            .label(t!("median"))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
 
-    chart
-        .draw_series(LineSeries::new(
-            use_history().median.iter().map(|&y| y as f64).enumerate(),
-            &BLUE,
-        ))
-        .unwrap()
-        .label(t!("median"))
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        chart
+            .draw_series(LineSeries::new(
+                use_history().worst.iter().map(|&y| y as f64).enumerate(),
+                &RED,
+            ))
+            .unwrap()
+            .label(t!("worst"))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
 
-    chart
-        .draw_series(LineSeries::new(
-            use_history().worst.iter().map(|&y| y as f64).enumerate(),
-            &RED,
-        ))
-        .unwrap()
-        .label(t!("worst"))
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        chart
+            .configure_series_labels()
+            .background_style(RGBColor(178, 178, 178))
+            .label_font(("sans-serif", 20).into_font())
+            .border_style(&BLACK)
+            .position(SeriesLabelPosition::Coordinate(
+                GRAPH_WIDTH as i32 / 2,
+                GRAPH_HEIGHT as i32 / 6,
+            ))
+            .draw()?;
 
-    chart
-        .configure_series_labels()
-        .background_style(RGBColor(178, 178, 178))
-        .label_font(("sans-serif", 20).into_font())
-        .border_style(&BLACK)
-        .position(SeriesLabelPosition::Coordinate(
-            GRAPH_WIDTH as i32 / 2,
-            GRAPH_HEIGHT as i32 / 6,
-        ))
-        .draw()?;
+        let mut data = vec![0; 0];
+        let cursor = Cursor::new(&mut data);
+        let encoder = PngEncoder::new(cursor);
+        let color = image::ColorType::Rgb8;
 
-    let mut data = vec![0; 0];
-    let cursor = Cursor::new(&mut data);
-    let encoder = PngEncoder::new(cursor);
-    let color = image::ColorType::Rgb8;
-
-    drop(chart);
-    drop(root);
-
-    match encoder.write_image(buf.as_slice(), GRAPH_WIDTH, GRAPH_HEIGHT, color.into()) {
-        Ok(_) => {
-            let buffer_base64 = BASE64_STANDARD.encode(data);
-            rsx! {
-                img { src: "data:image/png;base64,{buffer_base64}" }
+        match encoder.write_image(bufr.as_slice(), GRAPH_WIDTH, GRAPH_HEIGHT, color.into()) {
+            Ok(_) => {
+                let buffer_base64 = BASE64_STANDARD.encode(data);
+                return rsx! {
+                    img { src: "data:image/png;base64,{buffer_base64}" }
+                };
+            }
+            Err(e) => {
+                info!("The PNG encoder should have written the image: {e}");
+                return rsx! {};
             }
         }
-        Err(e) => {
-            info!("The PNG encoder should have written the image: {e}");
-            rsx! {}
-        }
     }
+    rsx! {}
 }
