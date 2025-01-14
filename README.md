@@ -13,7 +13,9 @@ Nonograms are graphic logical puzzles where you must fill a grid of cells with d
 
 `ngram` is licensed under the [**MIT license**](/LICENSE.md), allowing users to use, modify, and distribute the software freely, provided they adhere to the same terms and conditions outlined in the license.
 
-Any **contribution** submitted to the repository must be licensed under the **MIT license**, ensuring that the added code can be used, modified, and distributed by others under the same terms.
+> Not accepting **contributions** right now.
+
+~~Any **contribution** submitted to the repository must be licensed under the **MIT license**, ensuring that the added code can be used, modified, and distributed by others under the same terms.~~
 
 ## Table of Contents
 

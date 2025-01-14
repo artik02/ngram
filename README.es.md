@@ -13,7 +13,9 @@ Los *nonogramas* son acertijos lógicos de tipo gráfico en los que se debe comp
 
 `ngram` está licenciado bajo la [**licencia MIT**](/LICENSE.es.md), lo que permite a los usuarios utilizar, modificar y distribuir el software de manera libre, siempre que se mantengan los mismos términos y condiciones establecidos en dicha licencia.
 
-Cualquier **contribución** enviada al repositorio deberá estar licenciada bajo la **licencia MIT**, asegurando que el código añadido pueda ser utilizado, modificado y distribuido por otros bajo los mismos términos.
+> No se aceptan **contribuciones** actualmente.
+
+~~Cualquier **contribución** enviada al repositorio deberá estar licenciada bajo la **licencia MIT**, asegurando que el código añadido pueda ser utilizado, modificado y distribuido por otros bajo los mismos términos.~~
 
 ## Tabla de Contenidos
 
