@@ -27,45 +27,6 @@ use rand::{rngs::StdRng, seq::SliceRandom, Rng};
 use std::mem;
 
 impl NonogramPuzzle {
-    /// Generates a new random solution using a chromosome-based approach for the Nonogram puzzle.
-    ///
-    /// This method creates a `NonogramSolution` that satisfies the row constraints of the puzzle.
-    /// The generated solution is constructed by randomly distributing gaps (background cells)
-    /// around the segments in each row while ensuring that the total segment lengths and gaps
-    /// match the specified number of columns in the puzzle.
-    ///
-    /// # Arguments
-    ///
-    /// - `rng`: A mutable reference to a random number generator implementing `StdRng`.
-    ///   This ensures that the solution generation is reproducible when using the same seed.
-    ///
-    /// # Returns
-    ///
-    /// - A `NonogramSolution` containing a valid solution grid where all rows satisfy the
-    ///   given row constraints. The solution grid is represented as a 2D vector of `usize` values,
-    ///   where each cell indicates either a segment color or the background.
-    ///
-    /// # Advanced Explanation
-    ///
-    /// This method follows these steps for each row:
-    ///
-    /// 1. **Calculate Space Requirements**:
-    ///    Determine the total length of all segments in the row, then calculate the remaining spaces (gaps)
-    ///    by subtracting this total from the number of columns (`self.cols`).
-    ///
-    /// 2. **Random Gap Distribution**:
-    ///    For each segment in the row:
-    ///    - Generate a random gap size between 0 and the remaining spaces (inclusive).
-    ///    - Append the gap to the chromosome.
-    ///    - Deduct the gap size from the remaining spaces.
-    ///    - Append the segment to the chromosome.
-    ///
-    /// 3. **Fill Remaining Gaps**:
-    ///    After all segments have been added, if there are any remaining spaces, append them as a final gap.
-    ///
-    /// The random placement of gaps ensures that the solution is non-deterministic while always conforming
-    /// to the row constraints. This makes it a useful starting point for optimization algorithms like
-    /// genetic algorithms or simulated annealing, where random initial solutions are required.
     pub fn new_chromosome_solution(&self, rng: &mut StdRng) -> NonogramSolution {
         let solution_grid = self
             .row_constraints
@@ -111,36 +72,6 @@ impl NonogramPuzzle {
         NonogramSolution { solution_grid }
     }
 
-    /// Calculates the "badness" score of a given candidate solution in relation to the expected column constraints.
-    ///
-    /// This method evaluates how closely a candidate solution matches the expected column constraints by assigning
-    /// a "badness" score, which quantifies the deviation from the expected solution. A lower score indicates a closer
-    /// match.
-    ///
-    /// # Arguments
-    ///
-    /// - `candidate`: A reference to a `NonogramSolution`, which represents a proposed solution to the puzzle.
-    ///   The `NonogramSolution` consists of a `solution_grid`, a 2D grid where each cell contains the color (as a `usize`)
-    ///   of that cell.
-    ///
-    /// # Returns
-    ///
-    /// - A `usize` representing the total "badness" score of the candidate solution.
-    ///
-    /// # Advanced Explanation
-    ///
-    /// This method compares the candidate's column constraints against the expected column constraints by:
-    ///
-    /// 1. Summing the lengths of segments in both the candidate and expected columns.
-    /// 2. Calculating the absolute difference between these sums.
-    /// 3. Aggregating these differences across all columns to compute the total "badness" score.
-    ///
-    /// This scoring mechanism assumes that row constraints are already satisfied, as the `NonogramSolution`
-    /// generation methods are designed to produce candidates fulfilling the row constraints.
-    ///
-    /// Nonograms are popular for their blend of logical deduction and artistic creation, as solving them
-    /// often reveals a hidden image encoded in the grid. This scoring function serves as a useful heuristic
-    /// for guiding algorithms in generating or improving candidate solutions.
     pub fn score(&self, candidate: &NonogramSolution) -> usize {
         candidate
             .col_constraints()
@@ -158,7 +89,7 @@ impl NonogramPuzzle {
                             (cur.segment_length as isize - exp.segment_length as isize).abs()
                                 as usize
                         } else {
-                            cur.segment_length * 2 + exp.segment_length
+                            cur.segment_length + exp.segment_length
                         }
                     })
                     .sum::<usize>()
@@ -199,39 +130,6 @@ impl NonogramPuzzle {
         normalized_vec
     }
 
-    /// Creates two new solutions using a genetic approach, combining rows (chromosomes) from two ancestor solutions.
-    ///
-    /// This method generates two `NonogramSolution` instances by performing a uniform crossover operation
-    /// between two parent solutions. Each row (chromosome) in the descendants is randomly selected from one
-    /// of the two ancestors, ensuring diversity while preserving the structural integrity of the solutions.
-    ///
-    /// # Arguments
-    ///
-    /// - `ancestor_1`: A reference to the first parent solution (`NonogramSolution`).
-    /// - `ancestor_2`: A reference to the second parent solution (`NonogramSolution`).
-    /// - `cross_probability`: The probability of a crossover between chromosomes happening.
-    /// - `rng`: A mutable reference to a random number generator implementing `StdRng`.
-    ///   This ensures reproducibility of the crossover operation when using the same seed.
-    ///
-    /// # Returns
-    ///
-    /// - A tuple containing two new solutions (`descendant_1`, `descendant_2`), which are combinations of the rows
-    ///   (chromosomes) from the two ancestor solutions.
-    ///
-    /// # Method Details
-    ///
-    /// - For each row in the grid:
-    ///   - A random decision is made (with `cross_probability`) to take the row from either `ancestor_1` or `ancestor_2`.
-    ///   - The row from the chosen ancestor is added to the corresponding descendant.
-    ///   - This ensures that each descendant is a unique combination of rows from the two ancestors.
-    ///
-    /// - The method uses `.get(i)` to safely access the rows in the ancestor solutions. If a row is missing in either
-    ///   ancestor, the method panics with an error message indicating the missing row's index.
-    ///
-    /// This genetic approach mimics biological inheritance, where traits (rows in this case) are passed
-    /// from both parents to offspring. The uniform crossover is useful in optimization algorithms like
-    /// genetic algorithms, where diverse offspring are crucial for exploring the solution space.
-    // TODO! Check if raw access "[i]" is more performant that ".get(i)"
     pub fn uniform_cross(
         &self,
         ancestor_1: &NonogramSolution,
@@ -279,47 +177,6 @@ impl NonogramPuzzle {
         (nsol!(descendant_1), nsol!(descendant_2))
     }
 
-    /// Creates two new solutions using a genetic two-point crossover approach, combining rows (chromosomes) from two ancestor solutions.
-    ///
-    /// This method generates two `NonogramSolution` instances by selecting two random crossover points
-    /// and swapping the rows (chromosomes) between two ancestor solutions within the range defined by these points.
-    /// Rows outside the crossover range are directly inherited from their respective ancestors.
-    ///
-    /// # Arguments
-    ///
-    /// - `ancestor_1`: A reference to the first parent solution (`NonogramSolution`).
-    /// - `ancestor_2`: A reference to the second parent solution (`NonogramSolution`).
-    /// - `cross_probability`: The probability of a crossover happening at all.
-    /// - `rng`: A mutable reference to a random number generator implementing `StdRng`.
-    ///   This ensures reproducibility of the crossover operation when using the same seed.
-    ///
-    /// # Returns
-    ///
-    /// - A tuple containing two new solutions (`descendant_1`, `descendant_2`), which are combinations of rows
-    ///   from the two ancestor solutions, with rows swapped between the two crossover points.
-    ///
-    /// # Method Details
-    ///
-    /// 1. **Determine Crossover Will Happen**:
-    ///    - A random decision is made (with `cross_probability`) to apply the crossover or simply return clones.
-    ///
-    /// 2. **Determine Crossover Points**:
-    ///    - Two random crossover points, `point_1` and `point_2`, are selected within the range `[1, self.cols - 1)`.
-    ///    - If `point_1` is greater than `point_2`, the values are swapped to ensure `point_1 < point_2`.
-    ///
-    /// 3. **Row Inheritance**:
-    ///    - For rows outside the range `[point_1, point_2]`:
-    ///      - Rows are inherited directly from `ancestor_1` into `descendant_1` and from `ancestor_2` into `descendant_2`.
-    ///    - For rows within the range `[point_1, point_2]`:
-    ///      - Rows are swapped, with `ancestor_1` contributing to `descendant_2` and `ancestor_2` contributing to `descendant_1`.
-    ///
-    /// 4. **Indexing Safety**:
-    ///    - Rows are accessed using `.get(i)` to ensure safe access to the ancestor grids. If a row is missing in either
-    ///      ancestor, the method panics with an error message indicating the missing row's index.
-    ///
-    /// This two-point crossover method introduces more structured variability compared to uniform crossover,
-    /// preserving longer contiguous sections of chromosomes from each ancestor. It is a valuable technique in
-    /// genetic algorithms for maintaining solution diversity while combining desirable traits from both parents.
     // TODO! Check if raw access "[i]" is more performant that ".get(i)"
     pub fn two_point_cross(
         &self,
@@ -379,46 +236,6 @@ impl NonogramPuzzle {
         (nsol!(descendant_1), nsol!(descendant_2))
     }
 
-    /// Applies mutation to a candidate solution by randomly sliding a single segment within rows (chromosomes) based on a given mutation probability.
-    ///
-    /// This method introduces variability into a `NonogramSolution` by occasionally swapping an end of a segment with an adjacent background cell,
-    /// effectively "sliding" the segment within a row. The probability of mutation is controlled by the `mutation_probability` parameter,
-    /// and the mutation affects only rows where the random condition is met.
-    ///
-    /// # Arguments
-    ///
-    /// - `candidate`: A mutable reference to a `NonogramSolution`. This is the solution that will be mutated.
-    /// - `mutation_probability`: A `f64` value representing the probability of mutating each row.
-    ///   Values should typically range between `0.0` and `1.0`, where `0.0` means no mutation and `1.0` means every row mutates.
-    /// - `rng`: A mutable reference to a random number generator implementing `StdRng`.
-    ///   This ensures reproducibility of mutations when using the same seed.
-    ///
-    /// # Method Details
-    ///
-    /// 1. **Row Mutation Check**:
-    ///    - For each row in the candidate solution's grid, a random boolean is generated using `rng.gen_bool(mutation_probability)`.
-    ///    - If the result is true, the row is selected for mutation.
-    ///
-    /// 2. **Identifying Slidable Segments**:
-    ///    - The method `Self::get_slidables` is used to identify segments that are "slidable." This refers to segments where
-    ///      either end of the segment can be swapped with adjacent background cells while maintaining the row's integrity.
-    ///
-    /// 3. **Sliding (Swapping) Segments**:
-    ///    - A random pair of slidable indices is selected using `choose(rng)`.
-    ///    - The segments at these indices are swapped. Essentially, the end of the segment is slid into the adjacent empty space (background),
-    ///      and the background is moved to the position previously occupied by the segment’s end.
-    ///
-    /// This mutation process mimics the genetic mutation operation, introducing random changes that allow exploration of the solution space.
-    /// It helps avoid premature convergence by creating diversity in the population of solutions. The mutation probability controls
-    /// the degree of randomness, with higher probabilities generating more diverse solutions and lower probabilities preserving the
-    /// stability of promising solutions.
-    ///
-    /// # Notes
-    ///
-    /// - Consider using the [Bernoulli] distribution if mutation probabilities remain constant over many iterations,
-    ///   as it may improve performance in these scenarios.
-    /// - The mutation process respects the integrity of the row, ensuring that only valid swaps occur based on the
-    ///   constraints of the puzzle.
     pub fn chromosome_mutation(
         &self,
         candidate: &mut NonogramSolution,
@@ -438,50 +255,6 @@ impl NonogramPuzzle {
         }
     }
 
-    /// Identifies all valid segment slides within a row based on its segment colors.
-    ///
-    /// This method analyzes a row of segment colors and determines all the possible "slidable" segment positions.
-    /// A "slidable" segment is one where an end of a segment can be swapped with an adjacent background space,
-    /// effectively sliding the segment within the row. This is important for mutation operations, where segments
-    /// are randomly slid to introduce variability in genetic algorithms.
-    ///
-    /// # Arguments
-    ///
-    /// - `row_segment_colors`: A reference to a `Vec<usize>`, representing a row in a `NonogramSolution`.
-    ///   The row consists of segment colors (non-zero values) and background (zero values). A segment is a contiguous
-    ///   group of non-zero values representing a color, and the background is denoted by zero.
-    ///
-    /// # Returns
-    ///
-    /// - A `Vec<(usize, usize)>` containing pairs of indices where segments can be slid. Each pair represents
-    ///   a valid "slidable" position, where the first index is the end of a segment (the "sliding" point),
-    ///   and the second index is the start of the adjacent background space that can replace the segment's end.
-    ///
-    /// # Method Details
-    ///
-    /// 1. **Identify Segments and Background**:
-    ///    - The method iterates over the row to detect segments (non-zero values) and background cells (zero values).
-    ///    - A segment is defined as a contiguous block of non-zero values. Background cells are areas between or around segments.
-    ///
-    /// 2. **Detect Possible Slidable Positions**:
-    ///    - When a background cell (`BACKGROUND`) is adjacent to a segment, the method identifies potential sliding points.
-    ///    - The end of the segment and the adjacent background are marked as a valid sliding pair.
-    ///
-    /// 3. **Slide Segments**:
-    ///    - If a segment is detected, and there is an adjacent background, the method identifies two types of slides:
-    ///      - **Left Slide**: The end of a segment can be swapped with the adjacent background to the left.
-    ///      - **Right Slide**: The start of the segment can be swapped with the adjacent background to the right.
-    ///    - The method ensures that sliding only happens between adjacent background and segment, maintaining the row's integrity.
-    ///
-    /// 4. **Return Valid Slide Indices**:
-    ///    - The method returns a vector of tuples representing the valid sliding indices within the row.
-    ///
-    /// This method is particularly useful in mutation operations for genetic algorithms, where sliding segments
-    /// within rows helps introduce diversity and avoid premature convergence in solution search spaces.
-    ///
-    /// # Example:
-    /// Given a row `vec![0, 1, 1, 0, 2, 2, 0]`, the method would return pairs of indices that represent the
-    /// valid places where segments `1` and `2` can slide within the background: vec![(0, 2), (1, 3), (3, 5), (4, 6)].
     pub fn get_slidables(row_segment_colors: &Vec<usize>) -> Vec<(usize, usize)> {
         let mut slidable_segments = Vec::new();
 
@@ -573,6 +346,7 @@ mod tests {
     }
 
     // Helper function to compare slidables
+    //
     // This function compares the actual and expected slidable positions and checks that they are identical.
     // It ensures that the number of slidable positions is the same and that the corresponding positions
     // match in value and order.

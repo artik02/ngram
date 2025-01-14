@@ -26,7 +26,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::define_palette;
 
-// TODO! Remove brush color, since global context can be accessed by type
 #[derive(Clone, Deserialize, Serialize)]
 pub struct NonogramPalette {
     pub color_palette: Vec<String>,
@@ -40,13 +39,13 @@ pub const WOOD: usize = 2;
 define_palette!(
     DEFAULT_PALETTE,
     "#b7e1f9", // Sky Blue
-    "#2b711f", // Green (Somewhat Dark, like foliage)
-    "#8b4513", // Brown (Somewhat Dark, like a tree)
+    "#2b711f", // Green
+    "#8b4513", // Brown
     "#000000", // Black
     "#ffffff", // White
-    "#e65724", // Orange (Somewhat Bright)
-    "#ae7e40", // Light Brown (Soft, like beige)
-    "#879f31"  // Light Green (Like Grass)
+    "#e65724", // Orange
+    "#ae7e40", // Light Brown
+    "#879f31"  // Light Green
 );
 
 #[derive(Clone, PartialEq, Debug)]
