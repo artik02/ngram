@@ -695,6 +695,36 @@ fn FileLoadEditInput() -> Element {
     }
 }
 
+#[cfg(not(feature = "web"))]
+fn save_nonogram(json: String, filename: String) {
+    use std::fs;
+    use std::io::Write;
+
+    let mut file = fs::File::create(&filename).expect("Failed to create ngram file");
+    file.write_all(json.as_bytes())
+        .expect("Failed to write data to ngram file");
+    println!("Nonogram saved to {}", filename);
+}
+
+#[cfg(feature = "web")]
+fn save_nonogram(json: String, filename: String) {
+    let data_uri = format!(
+        "data:application/json;charset=utf-8,{}",
+        urlencoding::encode(&json)
+    );
+
+    let document = web_sys::window().unwrap().document().unwrap();
+    let a = document.create_element("a").unwrap();
+    a.set_attribute("href", &data_uri).unwrap();
+    a.set_attribute("download", &filename).unwrap();
+
+    let body = document.body().unwrap();
+    body.append_child(&a).unwrap();
+    let click_event = web_sys::MouseEvent::new("click").unwrap();
+    a.dispatch_event(&click_event).unwrap();
+    body.remove_child(&a).unwrap();
+}
+
 #[component]
 fn FileSaveButton() -> Element {
     let use_solution = use_context::<Signal<NonogramSolution>>();
@@ -720,26 +750,9 @@ fn FileSaveButton() -> Element {
                 };
                 let filename = format!("{}{}", filename, extension);
 
-                // Create a data URI for the JSON file
-                let data_uri = format!(
-                    "data:application/json;charset=utf-8,{}",
-                    urlencoding::encode(&json)
-                );
+                save_nonogram(json, filename);
 
-                // Create a temporary download link
-                let document = web_sys::window().unwrap().document().unwrap();
-                let a = document.create_element("a").unwrap();
-                a.set_attribute("href", &data_uri).unwrap();
-                a.set_attribute("download", &filename).unwrap();
-
-                // Trigger the download
-                let body = document.body().unwrap();
-                body.append_child(&a).unwrap();
-                let click_event = web_sys::MouseEvent::new("click").unwrap();
-                a.dispatch_event(&click_event).unwrap();
-                body.remove_child(&a).unwrap();
-
-                info!("Nonogram '{}' prepared for download!", filename);
+                info!("Nonogram prepared for download!");
             }
             Err(err) => {
                 error!("Failed to serialize the nonogram: {}", err);
