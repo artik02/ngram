@@ -11,6 +11,7 @@
 - [ ] Make nav bar visible on mobile
 - [ ] Make drawing multiple blocks work on mobile
 - [ ] Make file saving work on web and mobile (file engines!)
+- [X] Make color palette aware of the solution before removing used indexes
 
 ## Features
 
@@ -39,7 +40,7 @@
     + [X] Nonogram evaluation function
     + [ ] Add evolutive search to solve nonograms
         * [X] Develop evolutive algorithms
-    + [ ] Apply the ANOVA method
+    + [X] Apply the ANOVA method
     + [ ] Make the code parallel
     + [ ] Clear off dust of the design
 - [ ] Hideable nav bar
@@ -50,6 +51,9 @@
 
 ## Chores
 
+- [ ] Split Solution component into solving and editing modes
+- [ ] Rename Solution component to have a better understanding
+    + [ ] Better component naming convention
 - [ ] Update releases to use bundles
     + [ ] Update readme installation section
 - [ ] Add an icon for the application
@@ -60,10 +64,10 @@
 - [ ] Move nonogram components in it's own modules
     + [X] Rework toolbar component
 - [x] Move editor to nonogram module
-- [ ] Document the code
-- [ ] Document in detail
-    + [ ] Document the representation of a nonogram
-    + [ ] Document the nonogram evalutation function
-    + [ ] Document the genetic algorithms
-    + [ ] Document the evolutive algorithms
-    + [ ] Document the execution and tests
+- [X] Document the code
+- [X] Document in detail
+    + [X] Document the representation of a nonogram
+    + [X] Document the nonogram evalutation function
+    + [X] Document the genetic algorithms
+    + [X] Document the evolutive algorithms
+    + [X] Document the execution and tests

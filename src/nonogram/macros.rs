@@ -20,28 +20,67 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/// Defines a macro for creating a lazily initialized Nonogram palette.
+///
+/// This macro generates a `LazyLock` instance containing a `NonogramPalette` with the specified colors.
+///
+/// # Arguments
+/// - `$color:expr`: A series of string literals representing hexadecimal color codes.
+///
+/// # Example
+/// ```rust
+/// let palette = define_palette!("#FFFFFF", "#000000", "#FF0000");
+/// ```
 #[macro_export]
 macro_rules! define_palette {
-    ($name:ident, $($color:expr),+) => {
-        pub static $name: std::sync::LazyLock<crate::nonogram::definitions::NonogramPalette> = std::sync::LazyLock::new(|| {
+    ($($color:expr),+) => {
+        std::sync::LazyLock::new(|| {
             crate::nonogram::definitions::NonogramPalette {
                 color_palette: vec![$(String::from($color)),+],
                 brush: 0,
             }
-        });
+        })
     };
 }
 
+/// Defines a macro for creating a Nonogram segment.
+///
+/// This macro simplifies the creation of a `NonogramSegment` by specifying its color and length.
+/// Makes the code more readable when used with constants.
+///
+/// # Arguments
+/// - `$color:expr`: The index of the color in the palette.
+/// - `$length:expr`: The length of the segment.
+///
+/// # Example
+/// ```rust
+/// let segment = nrule!(1, 5); // Creates a segment with color index 1 and length 5.
+/// ```
 #[macro_export]
 macro_rules! nrule {
     ($color:expr, $length:expr) => {
         crate::nonogram::definitions::NonogramSegment {
-            segment_color: $color,
-            segment_length: $length,
+            color: $color,
+            length: $length,
         }
     };
 }
 
+/// Defines a macro for creating a Nonogram solution.
+///
+/// This macro simplifies the creation of a `NonogramSolution` by directly providing the grid.
+///
+/// # Arguments
+/// - `$grid:expr`: A 2D vector representing the solution grid of the Nonogram.
+///
+/// # Example
+/// ```rust
+/// let solution = nsol!(vec![
+///     vec![0, 1, 1],
+///     vec![1, 0, 1],
+///     vec![0, 0, 1],
+/// ]);
+/// ```
 #[macro_export]
 macro_rules! nsol {
     ($grid:expr) => {

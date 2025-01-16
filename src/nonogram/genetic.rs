@@ -34,11 +34,11 @@ impl NonogramPuzzle {
             .map(|row_segments| {
                 let row_segments_length = row_segments
                     .iter()
-                    .map(|segment| segment.segment_length)
+                    .map(|segment| segment.length)
                     .sum::<usize>();
                 let required_spaces = row_segments
                     .windows(2)
-                    .filter(|segments| segments[0].segment_color == segments[1].segment_color)
+                    .filter(|segments| segments[0].color == segments[1].color)
                     .count();
                 let chromosome_length = self.cols;
                 let mut remaining_spaces =
@@ -53,11 +53,11 @@ impl NonogramPuzzle {
                             row_chromosome.append(&mut gap_segment);
                         }
                     }
-                    let color = segment.segment_color;
-                    let mut segment = vec![segment.segment_color; segment.segment_length];
+                    let color = segment.color;
+                    let mut segment = vec![segment.color; segment.length];
                     row_chromosome.append(&mut segment);
                     if let Some(next_segment) = row_segments.get(i + 1) {
-                        if next_segment.segment_color == color {
+                        if next_segment.color == color {
                             row_chromosome.push(BACKGROUND);
                         }
                     }
@@ -85,11 +85,10 @@ impl NonogramPuzzle {
                     .iter()
                     .zip(expected.iter())
                     .map(|(cur, exp)| {
-                        if cur.segment_color == exp.segment_color {
-                            (cur.segment_length as isize - exp.segment_length as isize).abs()
-                                as usize
+                        if cur.color == exp.color {
+                            (cur.length as isize - exp.length as isize).abs() as usize
                         } else {
-                            cur.segment_length + exp.segment_length
+                            cur.length + exp.length
                         }
                     })
                     .sum::<usize>()
@@ -103,14 +102,8 @@ impl NonogramPuzzle {
             .iter()
             .zip(self.col_constraints.iter())
             .map(|(current_segments, expected_segments)| {
-                let c: usize = current_segments
-                    .iter()
-                    .map(|segment| segment.segment_length)
-                    .sum();
-                let e: usize = expected_segments
-                    .iter()
-                    .map(|segment| segment.segment_length)
-                    .sum();
+                let c: usize = current_segments.iter().map(|segment| segment.length).sum();
+                let e: usize = expected_segments.iter().map(|segment| segment.length).sum();
                 (c as isize - e as isize).abs() as usize
             })
             .sum::<usize>()
@@ -121,8 +114,8 @@ impl NonogramPuzzle {
         let mut normalized_vec = Vec::with_capacity(len);
         normalized_vec.extend(vec![
             NonogramSegment {
-                segment_color: 0,
-                segment_length: 0
+                color: 0,
+                length: 0
             };
             padding
         ]);
